@@ -1,0 +1,125 @@
+<resources>
+
+    <!--string name="default_url">https://www.winnerlife.co.kr/coa_fit/index.php</string>
+    <string name="setting_message_url">https://www.winnerlife.co.kr/coa_fit/setting_message.php</string>
+    <string name="api_url">https://www.winnerlife.co.kr/test/coa_api.php</string-->
+    <string name="default_url">https://www.smarthelper.co.kr/index.php</string>
+    <string name="api_url">https://www.smarthelper.co.kr/coa_api.php</string>
+    <string name="login_url">https://www.smarthelper.co.kr/login.php</string>
+    <string name="sns_callback_url">https://www.smarthelper.co.kr/sns/callback_from_app.php</string>
+    <string name="user_agent">smarthelper_app_android</string>
+    <string name="js_name">MyApp</string>
+
+    <string name="unity_id">3105065</string>
+
+    <string name="adlib_id">5d2d205984aed9d78259c346</string>
+
+    <string name="naver_client_id">A4gpA591o6wMFSoma9tM</string>
+    <string name="naver_client_secret">JwfgFWeWce</string>
+
+    <string name="kakao_native_app_key">76d619eeaa67fe42507b55856e715765</string>
+    <string name="kakao_scheme">kakaodf0fb0a29530ede0aba29a9414deb5af</string>
+    <string name="kakao_client_secret">LIM5130vUv93dksCioP3h5AbQqlhAP7n</string>
+    <string name="kakao_link_host">kakaolink</string>
+
+    <string name="facebook_app_id">60126113656973915</string>
+
+
+    <string name="app_name">Smart Helper</string>
+    <string name="loading">로딩중</string>
+    <string name="back">뒤로</string>
+    <string name="yes">네</string>
+    <string name="no">아니오</string>
+    <string name="confirm_unbind">연결을 끊으시겠습니까?</string>
+    <string name="connect">연결</string>
+    <string name="scan">기기 검색하기</string>
+    <string name="scanning">기기 검색중</string>
+    <string name="stop_scan">검색중지</string>
+    <string name="enable_bluetooth">휴대폰의 블루투스 기능을 켜주세요</string>
+    <string name="percent0">0%</string>
+    <string name="percent_d" formatted="false">%d%%</string>
+    <string name="send_file">SEND FILE</string>
+    <string name="send_agps">SEND AGPS</string>
+    <!--华丽丽的分割线-->
+    <string name="bind">Bind</string>
+    <string name="bind_tip">기기에서 초록색 연동버튼을 눌러주세요</string>
+    <string name="unpair_tip">Your phone has paired with the Bluetooth device you selected,please unpair with it in
+        Bluetooth Settings first!</string>
+    <string name="unbind">Unbind</string>
+    <string name="login">Login</string>
+    <string name="connect_classic">Connect Classic</string>
+    <string name="sync_time">Set Time</string>
+    <string name="read_battery">Read Battery</string>
+    <string name="read_version">Version</string>
+    <string name="read_version_m">Version M</string>
+    <string name="set_user">Set User</string>
+    <string name="set_goal">Set Goal</string>
+    <string name="read_goal">Read Goal</string>
+    <string name="unit">Set Unit</string>
+    <string name="language">Set Language</string>
+    <string name="hour_24">Switch 24-hour</string>
+    <string name="time_zone">Time Zone</string>
+    <string name="timing">Timing</string>
+    <string name="settings_completed">Settings Completed(Only for 10T)</string>
+    <!--CMD-->
+    <string name="cmd_update">UPDATE</string>
+    <string name="cmd_set">SET</string>
+    <string name="cmd_connect">CONNECT</string>
+    <string name="cmd_notice">NOTICE</string>
+    <string name="cmd_data">DATA</string>
+    <string name="cmd_control">CONTROL</string>
+    <string name="verify_error">Verify error</string>
+    <string name="check">Check</string>
+    <string name="latest_version">Latest Version</string>
+    <string name="checking">checking…</string>
+    <string name="download">Download</string>
+    <string name="downloading">Downloading…</string>
+    <string name="format_downloading_d_percent">Downloading…%d%%</string>
+    <string name="pause">Pause</string>
+    <string name="paused">Paused</string>
+    <string name="resume">Resume</string>
+    <string name="download_failed">Download failed</string>
+    <string name="retry">Retry</string>
+    <string name="download_completed">Download complete</string>
+    <string name="upgrade">Upgrade</string>
+    <string name="format_transferring_d_percent">Transferring:%d%%</string>
+    <!--华丽丽的分割线-->
+    <string name="anti_lost">Anti-lost</string>
+    <string name="no_disturb">No disturb</string>
+    <string name="call">Call</string>
+    <string name="notification">Notification</string>
+    <string name="find_device">Find device</string>
+    <string name="arrive_at">Arrive at</string>
+    <string name="display_vertical">Display vertical</string>
+    <string name="raise_on">Raise on</string>
+    <string name="ringing">Ring</string>
+    <string name="offhook">Offhook</string>
+    <string name="idle">Idle</string>
+    <string name="take_photo">Take Photo</string>
+    <!--华丽丽的分割线-->
+    <string name="set_sedentariness_settings">Set Sedentariness Settings</string>
+    <string name="read_sedentariness_settings">Read Sedentariness Settings</string>
+    <string name="heart_rate_settings">Heart Rate Settings</string>
+    <string name="request_pair">Request pair</string>
+    <string name="set_system">Set system</string>
+    <string name="set_anti_lost_tel">Set Anti-lost Tel</string>
+    <string name="enable_notification_listener">Enable notification listener</string>
+    <string name="set_weather_unit">Set weather unit</string>
+    <string name="set_real_time_weather">Set real-time weather</string>
+    <string name="set_weather_forecast">Set weather forecast</string>
+    <string name="read_alarm">Read Alarm</string>
+    <string name="set_alarm">Set Alarm</string>
+    <string name="enter_into_ota">Enter into OTA</string>
+    <string name="replace_watch_face">Replace watch face</string>
+    <string name="replace_watch_face_for_m">Replace watch face for m</string>
+    <string name="replace">Replace</string>
+    <string name="switch_font">Switch Font</string>
+    <string name="update_for_m">Update for m</string>
+    <string name="replace_watchface_error">Replace watchface error</string>
+    <!--华丽丽的分割线-->
+    <string name="read_data">Read Data</string>
+    <string name="format_percent" formatted="false">%d%%</string>
+    <string name="current_version">current version</string>
+    <string name="cancel">CANCEL</string>
+    <string name="ok">OK</string>
+</resources>

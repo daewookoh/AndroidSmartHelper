@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.and.smarthelper">
+
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.READ_CALL_LOG"/>
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+    <uses-feature android:name="android.hardware.camera" />
+
+    <application
+        android:name="com.and.smarthelper.application.MyApplication"
+        android:screenOrientation="unspecified"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/AppTheme">
+        <activity android:name="com.and.smarthelper.activity.SplashActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.and.smarthelper.activity.LauncherActivity"
+            android:launchMode="singleTask">
+        </activity>
+        <activity android:name="com.and.smarthelper.activity.SplashActivity2"/>
+        <activity android:theme="@style/bind" android:name="com.and.smarthelper.activity.AppSelectActivity"/>
+        <activity android:name="com.and.smarthelper.activity.CommandListActivity"/>
+        <activity android:name="com.and.smarthelper.activity.CommandUpdateActivity"/>
+        <activity android:name="com.and.smarthelper.activity.CommandSetActivity"/>
+        <activity android:name="com.and.smarthelper.activity.CommandConnectActivity"/>
+        <activity android:name="com.and.smarthelper.activity.CommandNoticeActivity"/>
+        <activity android:name="com.and.smarthelper.activity.CommandDataActivity"/>
+        <activity android:name="com.and.smarthelper.activity.CommandControlActivity"/>
+        <activity android:theme="@style/bind" android:name="com.and.smarthelper.activity.BindActivity"/>
+        <activity android:name="com.and.smarthelper.activity.FirmwareUpdateActivity"/>
+        <activity android:name="com.and.smarthelper.activity.DfuNotificationActivity"/>
+
+        <activity
+            android:name="com.mocoplex.adlib.AdlibDialogActivity"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden"
+            android:theme="@style/AppTheme" />
+            <!--android:theme="@android:style/Theme.Translucent"/>-->
+
+        <service android:name="com.and.smarthelper.service.SmaService"/>
+        <service android:name="com.and.smarthelper.service.DfuService"/>
+        <!--service android:name=".service.NotificationService"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service-->
+
+        <!--Essential component for music control-->
+        <service
+            android:name="com.bestmafen.smablelib.server.MyNotificationService"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
+
+        <activity android:name="com.and.smarthelper.activity.TimingActivity"/>
+        <activity android:name="com.and.smarthelper.activity.ReplaceWatchFaceActivity"/>
+        <activity android:name="com.and.smarthelper.activity.CommandSendFileActivity"/>
+        <activity android:name="com.and.smarthelper.activity.ReplaceWatchFaceMActivity"/>
+        <activity android:name="com.and.smarthelper.activity.FirmwareUpdateMActivity"/>
+
+        <!-- 카카오로그인 -->
+        <activity
+            android:name="com.kakao.auth.authorization.authcode.KakaoWebViewActivity"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="portrait">
+        </activity>
+
+        <meta-data
+            android:name="com.kakao.sdk.AppKey"
+            android:value="@string/kakao_native_app_key" />
+        <!-- 카카오로그인 끝-->
+
+
+        <!--구글푸쉬-->
+        <service
+            android:name="com.and.smarthelper.service.MyFirebaseMessagingService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+        <!--구글푸쉬 끝-->
+
+        <!--meta-data android:name="com.facebook.sdk.ApplicationId" android:value="@string/facebook_app_id"/-->
+
+        <receiver android:name="com.and.smarthelper.receiver.AppReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_TICK"/>
+                <action android:name="android.intent.action.PHONE_STATE"/>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

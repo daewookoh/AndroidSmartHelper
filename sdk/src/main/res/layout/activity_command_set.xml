@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context="com.and.smarthelper.activity.CommandDataActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            style="@style/ll"
+            android:layout_width="match_parent">
+
+            <Button
+                android:id="@+id/btn_sync_time"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/sync_time"/>
+
+            <Button
+                android:id="@+id/btn_set_user"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/set_user"/>
+
+            <Button
+                android:id="@+id/btn_read_battery"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/read_battery"/>
+
+            <Button
+                android:id="@+id/btn_read_version"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/read_version"/>
+
+            <Button
+                android:id="@+id/btn_read_version_m"
+                style="@style/btn2"
+                android:text="@string/read_version_m"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll"
+            android:layout_width="match_parent">
+
+            <Button
+                android:id="@+id/btn_set_goal"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/set_goal"/>
+
+            <Button
+                android:id="@+id/btn_set_sedentariness"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/set_sedentariness_settings"/>
+
+            <Button
+                android:id="@+id/btn_heart_rate"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/heart_rate_settings"/>
+
+            <Button
+                android:id="@+id/btn_set_alarm"
+                style="@style/btn2"
+                android:text="@string/set_alarm"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <Button
+                android:id="@+id/btn_unit"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/unit"/>
+
+            <Button
+                android:id="@+id/btn_language"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/language"/>
+
+            <Button
+                android:id="@+id/btn_24hour"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/hour_24"/>
+
+            <Button
+                android:id="@+id/btn_time_zone"
+                style="@style/btn2"
+                android:text="@string/time_zone"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <Button
+                android:id="@+id/btn_pair"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/request_pair"/>
+
+            <Button
+                android:id="@+id/btn_set_system"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/set_system"/>
+
+            <Button
+                android:id="@+id/btn_set_anti_lost_tel"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/set_anti_lost_tel"/>
+
+            <Button
+                android:id="@+id/btn_timing"
+                style="@style/btn2"
+                android:text="@string/timing"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <Button
+                android:id="@+id/btn_weather_unit"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/set_weather_unit"/>
+
+            <Button
+                android:id="@+id/btn_real_time_weather"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/set_real_time_weather"/>
+
+            <Button
+                android:id="@+id/btn_set_weather_forecast"
+                style="@style/btn2"
+                android:text="@string/set_weather_forecast"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <Button
+                android:id="@+id/btn_enable_notification_listener"
+                style="@style/btn2"
+                android:enabled="true"
+                android:text="@string/enable_notification_listener"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <Button
+                android:id="@+id/btn_settings_completed"
+                style="@style/btn2"
+                android:text="@string/settings_completed"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="*Note: below three functions are only for SMA-09/Round watch series;If your watch is not SMA-09/Round, please do NOT click them, otherwise the connection between App and the device will be blocked, and then you will have to reboot the Bluetooth to continue to use the App."
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="12sp"/>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <Button
+                android:id="@+id/btn_read_goal"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/read_goal"/>
+
+            <Button
+                android:id="@+id/btn_read_sedentariness"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/read_sedentariness_settings"/>
+
+            <Button
+                android:id="@+id/btn_read_alarm"
+                style="@style/btn2"
+                android:text="@string/read_alarm"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll"
+            android:layout_marginBottom="0dp">
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_antilost"
+                style="@style/cb"
+                android:text="@string/anti_lost"/>
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_nodisturb"
+                style="@style/cb"
+                android:text="@string/no_disturb"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll"
+            android:layout_marginBottom="0dp">
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_call"
+                style="@style/cb"
+                android:text="@string/call"/>
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_notification"
+                style="@style/cb"
+                android:text="@string/notification"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll"
+            android:layout_marginBottom="0dp">
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_display_vertical"
+                style="@style/cb"
+                android:text="@string/display_vertical"/>
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_raise_on"
+                style="@style/cb"
+                android:text="@string/raise_on"/>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

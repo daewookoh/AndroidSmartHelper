@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context="com.and.smarthelper.activity.CommandDataActivity">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="below except round"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginBottom="12dp"
+        android:background="@color/colorAccent"/>
+
+    <Button
+        android:id="@+id/btn_ota"
+        style="@style/btn3"
+        android:text="@string/enter_into_ota"/>
+
+    <Button
+        android:id="@+id/btn_replace_watch_face"
+        style="@style/btn3"
+        android:text="@string/replace_watch_face"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="below just for round"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginBottom="12dp"
+        android:background="@color/colorAccent"/>
+
+    <Button
+        android:id="@+id/btn_update_m"
+        style="@style/btn3"
+        android:text="@string/update_for_m"/>
+
+    <Button
+        android:id="@+id/btn_replace_watch_face_m"
+        style="@style/btn3"
+        android:text="@string/replace_watch_face_for_m"/>
+</LinearLayout>

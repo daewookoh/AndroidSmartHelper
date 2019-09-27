@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context="com.and.smarthelper.activity.CommandDataActivity">
+
+    <Button
+        android:id="@+id/btn_ring"
+        style="@style/btn3"
+        android:text="@string/ringing"/>
+
+    <Button
+        android:id="@+id/btn_take_photo"
+        style="@style/btn3"
+        android:text="@string/take_photo"/>
+</LinearLayout>

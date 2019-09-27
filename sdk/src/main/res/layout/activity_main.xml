@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.and.smarthelper.activity.CommandDataActivity">
+
+    <SurfaceView
+        android:id="@+id/camera_preview_main"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_margin="@dimen/margin"
+        android:layout_marginBottom="4dp"
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/tv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="no data"/>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            style="@style/ll"
+            android:layout_width="wrap_content">
+
+            <Button
+                android:id="@+id/btn_bind"
+                style="@style/btn"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/bind"/>
+
+            <Button
+                android:id="@+id/btn_sync_time"
+                style="@style/btn2"
+                android:text="@string/sync_time"/>
+
+            <Button
+                android:id="@+id/btn_read_battery"
+                style="@style/btn2"
+                android:text="@string/read_battery"/>
+
+            <Button
+                android:id="@+id/btn_read_version"
+                style="@style/btn2"
+                android:text="@string/read_version"/>
+
+            <Button
+                android:id="@+id/btn_set_user"
+                style="@style/btn2"
+                android:text="@string/set_user"/>
+
+            <Button
+                android:id="@+id/btn_set_goal"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/set_goal"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_antilost"
+                style="@style/cb"
+                android:text="@string/anti_lost"/>
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_nodisturb"
+                style="@style/cb"
+                android:text="@string/no_disturb"/>
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_call"
+                style="@style/cb"
+                android:text="@string/call"/>
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cb_notification"
+                style="@style/cb"
+                android:text="@string/notification"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <Button
+                android:id="@+id/btn_ring"
+                style="@style/btn2"
+                android:text="@string/ringing"/>
+
+            <Button
+                android:id="@+id/btn_offhook"
+                style="@style/btn2"
+                android:text="@string/offhook"/>
+
+            <Button
+                android:id="@+id/btn_idle"
+                style="@style/btn2"
+                android:text="@string/idle"/>
+
+            <Button
+                android:id="@+id/btn_notification"
+                style="@style/btn2"
+                android:text="@string/notification"/>
+
+            <Button
+                android:id="@+id/btn_take_photo"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/take_photo"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <Button
+                android:id="@+id/btn_sedentariness"
+                style="@style/btn2"
+                android:text="@string/set_sedentariness_settings"/>
+
+            <Button
+                android:id="@+id/btn_heart_rate"
+                style="@style/btn2"
+                android:text="@string/heart_rate_settings"/>
+
+            <Button
+                android:id="@+id/btn_set_alarm"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/set_alarm"/>
+
+            <Button
+                android:id="@+id/btn_ota"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/enter_into_ota"/>
+        </LinearLayout>
+
+        <LinearLayout
+            style="@style/ll">
+
+            <Button
+                android:id="@+id/btn_read_data"
+                style="@style/btn2"
+                android:layout_marginEnd="@dimen/margin"
+                android:text="@string/read_data"/>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

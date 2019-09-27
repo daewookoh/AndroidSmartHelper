@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select a watch face you like:"/>
+
+    <RadioGroup
+        android:id="@+id/rg_selected"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="12dp">
+
+        <RadioButton
+            android:id="@+id/rb_selected1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:checked="true"
+            android:text="1"/>
+
+        <RadioButton
+            android:id="@+id/rb_selected2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="2"/>
+
+        <RadioButton
+            android:id="@+id/rb_selected3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="3"/>
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Which one to be replaced:"/>
+
+    <RadioGroup
+        android:id="@+id/rg_be_replaced"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="12dp">
+
+        <RadioButton
+            android:id="@+id/rb_replace1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:checked="true"
+            android:text="1"/>
+
+        <RadioButton
+            android:id="@+id/rb_replace2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="2"/>
+
+        <RadioButton
+            android:id="@+id/rb_replace3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="3"/>
+    </RadioGroup>
+
+    <Button
+        android:id="@+id/btn_replace"
+        style="@style/btn3"
+        android:layout_marginTop="16dp"
+        android:text="@string/replace"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Which font to be used:"/>
+
+    <RadioGroup
+        android:id="@+id/rg_font"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="12dp">
+
+        <RadioButton
+            android:id="@+id/rb_font_simple"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:checked="true"
+            android:text="simple"/>
+
+        <RadioButton
+            android:id="@+id/rb_font_whole"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="whole"/>
+    </RadioGroup>
+
+    <Button
+        android:id="@+id/btn_switch_font"
+        style="@style/btn3"
+        android:layout_marginTop="16dp"
+        android:text="@string/switch_font"/>
+
+    <TextView
+        android:id="@+id/tv_progress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="0"/>
+</LinearLayout>

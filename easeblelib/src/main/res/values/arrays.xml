@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="names">
+        <item></item>
+        <item>SMA-Q2</item>
+        <item>SM07</item>
+        <item>SMA-A1</item>
+        <item>HERA Fit</item>
+        <item>iMed</item>
+        <item>easysmart HR</item>
+    </string-array>
+    <string-array name="rssi">
+        <item>-64</item>
+        <item>-72</item>
+        <item>-80</item>
+        <item>-88</item>
+        <item>-96</item>
+    </string-array>
+    <string-array name="period">
+        <item>2000</item>
+        <item>5000</item>
+        <item>10000</item>
+        <item>20000</item>
+    </string-array>
+</resources>

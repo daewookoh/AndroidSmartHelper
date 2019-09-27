@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="genders">
+        <item>Female</item>
+        <item>Male</item>
+    </array>
+    <array name="goals">
+        <item>1000 steps</item>
+        <item>2000 steps</item>
+        <item>3000 steps</item>
+        <item>4000 steps</item>
+    </array>
+    <array name="units">
+        <item>Metric</item>
+        <item>Imperial</item>
+    </array>
+    <array name="Languages">
+        <item>简体中文</item>
+        <item>English</item>
+        <item>Türkçe</item>
+        <item>한국의</item>
+        <item>русский</item>
+        <item>español</item>
+    </array>
+    <array name="hour_format">
+        <item>12-hour</item>
+        <item>24-hour</item>
+    </array>
+    <array name="sedentariness_intervals">
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>2 hours</item>
+        <item>4 hours</item>
+    </array>
+    <array name="heart_rate_intervals">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>2 hours</item>
+    </array>
+    <array name="alarm_vibration_times">
+        <item>Close</item>
+        <item>2 times</item>
+        <item>4 times</item>
+        <item>6 times</item>
+        <item>8 times</item>
+    </array>
+    <array name="back_light_time">
+        <item>Close</item>
+        <item>2s</item>
+        <item>4s</item>
+        <item>6s</item>
+        <item>8s</item>
+    </array>
+</resources>

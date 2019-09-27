@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context="com.and.smarthelper.activity.CommandDataActivity">
+
+    <EditText
+        android:id="@+id/edt_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="title"/>
+
+    <EditText
+        android:id="@+id/edt_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="content"/>
+
+    <Button
+        android:id="@+id/btn_ring"
+        style="@style/btn3"
+        android:text="@string/ringing"/>
+
+    <Button
+        android:id="@+id/btn_offhook"
+        style="@style/btn3"
+        android:text="@string/offhook"/>
+
+    <Button
+        android:id="@+id/btn_idle"
+        style="@style/btn3"
+        android:text="@string/idle"/>
+
+    <Button
+        android:id="@+id/btn_notification"
+        style="@style/btn3"
+        android:text="@string/notification"/>
+
+    <Button
+        android:id="@+id/btn_find_device"
+        style="@style/btn3"
+        android:text="@string/find_device"/>
+
+    <Button
+        android:id="@+id/btn_arrive_at"
+        style="@style/btn3"
+        android:text="@string/arrive_at"/>
+</LinearLayout>

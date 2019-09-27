@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <Button
+        android:id="@+id/btn_update"
+        style="@style/btn3"
+        android:text="@string/cmd_update"/>
+
+    <Button
+        android:id="@+id/btn_set"
+        style="@style/btn3"
+        android:text="@string/cmd_set"/>
+
+    <Button
+        android:id="@+id/btn_connect"
+        style="@style/btn3"
+        android:text="@string/cmd_connect"/>
+
+    <Button
+        android:id="@+id/btn_notice"
+        style="@style/btn3"
+        android:text="@string/cmd_notice"/>
+
+    <Button
+        android:id="@+id/btn_data"
+        style="@style/btn3"
+        android:text="@string/cmd_data"/>
+
+    <Button
+        android:id="@+id/btn_control"
+        style="@style/btn3"
+        android:text="@string/cmd_control"/>
+</LinearLayout>

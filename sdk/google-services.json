@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "241472785774",
+    "firebase_url": "https://smarthelper-3be9b.firebaseio.com",
+    "project_id": "smarthelper-3be9b",
+    "storage_bucket": "smarthelper-3be9b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:241472785774:android:98dae61de5ad30d1",
+        "android_client_info": {
+          "package_name": "com.and.smarthelper"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "241472785774-0md0cc6clj81ohe5ik10hkjpeieehllb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjYKh0yUcP931qnsPy0DcQgmJq6_bfWEM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "241472785774-0md0cc6clj81ohe5ik10hkjpeieehllb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "241472785774-t9l89d086orj3l8vkglb57o83jongmmh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "a.a.om"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <Button
+        android:id="@+id/btn_bind"
+        style="@style/btn3"
+        android:text="@string/bind"/>
+
+    <Button
+        android:id="@+id/btn_unbind"
+        style="@style/btn3"
+        android:text="@string/unbind"/>
+
+    <Button
+        android:id="@+id/btn_login"
+        style="@style/btn3"
+        android:text="@string/login"/>
+
+    <Button
+        android:id="@+id/btn_connect_classic"
+        style="@style/btn3"
+        android:text="@string/connect_classic"/>
+</LinearLayout>
