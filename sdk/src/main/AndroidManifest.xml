@@ -39,7 +39,9 @@
             android:launchMode="singleTask">
         </activity>
         <activity android:name="com.and.smarthelper.activity.SplashActivity2"/>
-        <activity android:theme="@style/bind" android:name="com.and.smarthelper.activity.AppSelectActivity"/>
+        <activity android:theme="@style/bind"
+            android:name="com.and.smarthelper.activity.AppSelectActivity"
+            android:launchMode="singleTask"/>
         <activity android:name="com.and.smarthelper.activity.CommandListActivity"/>
         <activity android:name="com.and.smarthelper.activity.CommandUpdateActivity"/>
         <activity android:name="com.and.smarthelper.activity.CommandSetActivity"/>
@@ -47,7 +49,9 @@
         <activity android:name="com.and.smarthelper.activity.CommandNoticeActivity"/>
         <activity android:name="com.and.smarthelper.activity.CommandDataActivity"/>
         <activity android:name="com.and.smarthelper.activity.CommandControlActivity"/>
-        <activity android:theme="@style/bind" android:name="com.and.smarthelper.activity.BindActivity"/>
+        <activity android:theme="@style/bind"
+            android:name="com.and.smarthelper.activity.BindActivity"
+            android:launchMode="singleTask"/>
         <activity android:name="com.and.smarthelper.activity.FirmwareUpdateActivity"/>
         <activity android:name="com.and.smarthelper.activity.DfuNotificationActivity"/>
 
