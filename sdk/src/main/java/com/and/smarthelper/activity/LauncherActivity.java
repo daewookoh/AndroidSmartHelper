@@ -25,6 +25,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaActionSound;
 import android.media.MediaPlayer;
@@ -231,6 +232,7 @@ public class LauncherActivity extends Activity {
     AdlibManager adlibManager;
     String fileDir;
 
+    MediaPlayer player;
     int vol = 5;
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -342,7 +344,6 @@ public class LauncherActivity extends Activity {
         mSmaManager = mSmaManager.addSmaCallback(mSmaCallback = new SimpleSmaCallback() {
 
             //AudioManager mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-            MediaPlayer ringPlayer = MediaPlayer.create(LauncherActivity.this, R.raw.dingdong);
 
             @Override
             public void onReadSportData(final List<SmaSport> list) {
@@ -777,18 +778,10 @@ public class LauncherActivity extends Activity {
                 //T.show(mContext, "onFindPhone -> " + start);
 
                 if(start==true) {
-
-                    //vol = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-                    //mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
-
-                    ringPlayer.setLooping(true);
-                    ringPlayer.start();
-
+                    playAudio();
                 }else
                 {
-                    //mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, vol, 0);
-                    ringPlayer.stop();
-                    //ringPlayer = MediaPlayer.create(LauncherActivity.this, R.raw.ring);
+                    pauseAudio();
                 }
             }
 
@@ -799,6 +792,7 @@ public class LauncherActivity extends Activity {
                     @Override
                     public void run() {
                         doJavascript("javascript:isConnected('"+ok+"')");
+
                         //doJavascript("javascript:reload()");
                         //common.putSP("last_weather_update", "2019-01-01 00:00:00");
                         //common.putSP("last_agps_update", "2019-01-01 00:00:00");
@@ -1023,6 +1017,68 @@ public class LauncherActivity extends Activity {
             */
         });
 
+    }
+
+
+    private void playAudio() {
+
+        closePlayer();
+
+        player =  new MediaPlayer();
+
+        try {
+
+            player.setDataSource(getApplicationContext(), Uri.parse("android.resource://com.and.smarthelper/"+R.raw.dingdong));
+            //player = MediaPlayer.create(LauncherActivity.this, R.raw.dingdong);
+            player.setLooping(true);
+
+            if (Build.VERSION.SDK_INT >= 21) {
+                player.setAudioAttributes(new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build());
+            } else {
+                player.setAudioStreamType(AudioManager.STREAM_ALARM);
+            }
+
+            mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+            mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM, mAudioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
+            player.prepare();
+            player.start();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+    }
+
+    // 현재 일시정지가 되었는지 중지가 되었는지 헷갈릴 수 있기 때문에 스위치 변수를 선언해 구분할 필요가 있다. (구현은 안했다.)
+    private void pauseAudio() {
+        if (player != null) {
+            player.pause();
+        }
+    }
+
+    private void resumeAudio() {
+        if (player != null && !player.isPlaying()) {
+            player.seekTo(0);
+            player.start();
+        }
+    }
+
+    private void stopAudio() {
+        if(player != null && player.isPlaying()){
+            player.stop();
+        }
+    }
+
+    public void closePlayer() {
+        if (player != null) {
+            player.release();
+            player = null;
+        }
     }
 
     public void getToken(){
@@ -2551,6 +2607,7 @@ public class LauncherActivity extends Activity {
                                     mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_TIMEZONE, new SmaTimezone());
                                     SmaTime smaTime = new SmaTime();
                                     mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SYNC_TIME_2_DEVICE, smaTime);
+                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_LANGUAGE, SmaBleUtils.getLanguageCode(), 1);
                                 }else if(btAdapter.isEnabled()!=true){
                                     T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
                                 }else{
