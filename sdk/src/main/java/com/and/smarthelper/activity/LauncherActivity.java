@@ -245,6 +245,7 @@ public class LauncherActivity extends Activity {
                 Manifest.permission.CAMERA,
                 Manifest.permission.CALL_PHONE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.RECEIVE_SMS,
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.READ_CONTACTS,
@@ -2798,7 +2799,6 @@ public class LauncherActivity extends Activity {
                                     String file_name = "AGPS_" + sdf.format(new Date()) + ".dat";
 
                                     DownloadManager.Request request = new DownloadManager.Request(uri);
-
                                     //request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                                     request.setDestinationInExternalPublicDir(fileDir, file_name);
                                     long id = downloadmanager.enqueue(request);
@@ -3877,7 +3877,8 @@ public class LauncherActivity extends Activity {
                     // do something when successful
                     common.log("success");
 
-                    File initialFile = new File(fileDir + "/" + file_name);
+                    File initialFile = new File(Environment.getExternalStorageDirectory() + fileDir + "/" + file_name);
+
                     InputStream targetStream = null;
                     try {
                         targetStream = new FileInputStream(initialFile);
@@ -3896,6 +3897,7 @@ public class LauncherActivity extends Activity {
                     String cur_time = sdf.format(new Date());
 
                     common.putSP("last_agps_update",cur_time);
+
                 }
                 else if (status == DownloadManager.STATUS_RUNNING) {
                     // do something when running

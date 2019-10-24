@@ -559,7 +559,7 @@ public class SmaService extends Service {
                     // do something when successful
                     common.log("success");
 
-                    File initialFile = new File(Environment.getExternalStorageDirectory()+"/SmartHelper/" + file_name);
+                    File initialFile = new File(Environment.getExternalStorageDirectory() + getApplicationContext().getCacheDir().getAbsolutePath() + "/" + file_name);
                     InputStream targetStream = null;
                     try {
                         targetStream = new FileInputStream(initialFile);
