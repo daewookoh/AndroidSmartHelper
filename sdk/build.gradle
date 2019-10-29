@@ -9,8 +9,8 @@ android {
         applicationId "com.and.smarthelper"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 16
-        versionName "1.38"
+        versionCode 17
+        versionName "1.39"
         multiDexEnabled true
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }

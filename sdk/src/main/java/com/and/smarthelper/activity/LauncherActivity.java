@@ -3447,42 +3447,6 @@ public class LauncherActivity extends Activity {
         }
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        //webView.reload(); //카메라 이미지 업로드시 리로드되는 상황이 발생하여 리로드처리하지 않음
-
-        /*
-        // URL 세팅
-        String sUrl = getIntent().getStringExtra("sUrl");
-        if(sUrl!=null) {
-            webView.loadUrl(sUrl);
-        }
-        else{
-            webView.reload();
-        }
-        */
-
-        String cur_url = common.getSP("cur_url","EMPTY");
-
-        if(cur_url.contains("index.php") || cur_url.contains("device.php")) {
-            T.show(mContext, "기기 연결 확인중");
-            //doJavascript("javascript:show_loading(10000)"); //기기연결된 경우 reload
-            //splashView();
-        }
-
-        new android.os.Handler().postDelayed(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        if(progressDialog!=null) {
-                            progressDialog.dismiss();
-                        }
-                    }
-                }, 0);
-
-    }
-
     private void splashView(){
 
         /*
@@ -3953,5 +3917,49 @@ public class LauncherActivity extends Activity {
         }
         return dir.delete();
     }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        webView.resumeTimers();
+        //webView.reload(); //카메라 이미지 업로드시 리로드되는 상황이 발생하여 리로드처리하지 않음
+
+        /*
+        // URL 세팅
+        String sUrl = getIntent().getStringExtra("sUrl");
+        if(sUrl!=null) {
+            webView.loadUrl(sUrl);
+        }
+        else{
+            webView.reload();
+        }
+        */
+
+        String cur_url = common.getSP("cur_url","EMPTY");
+
+        if(cur_url.contains("index.php") || cur_url.contains("device.php")) {
+            T.show(mContext, "기기 연결 확인중");
+            //doJavascript("javascript:show_loading(10000)"); //기기연결된 경우 reload
+            //splashView();
+        }
+
+        new android.os.Handler().postDelayed(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        if(progressDialog!=null) {
+                            progressDialog.dismiss();
+                        }
+                    }
+                }, 0);
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        webView.pauseTimers();
+    }
+
 
 }
