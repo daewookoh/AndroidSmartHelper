@@ -1352,8 +1352,8 @@ public class SmaManager {
         mEditor.putString(SP_DEVICE_ADDRESS, address).apply();
 
         if(!name.isEmpty() && !address.isEmpty()) {
-            SharedPreferences pref = PreferenceManager
-                    .getDefaultSharedPreferences(mContext);
+            SharedPreferences pref = mContext.getSharedPreferences("shared_pref", MODE_PRIVATE);
+            //SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(mContext);
             String mem_no = pref.getString("mem_no", "0");
 
             String url = "https://www.smarthelper.co.kr/coa_api.php";
