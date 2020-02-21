@@ -9,8 +9,8 @@ android {
         applicationId "com.and.smarthelper"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 18
-        versionName "1.40"
+        versionCode 36
+        versionName "1.52"
         multiDexEnabled true
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
@@ -25,14 +25,14 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
             //storeFile file('/Users/godowondev/Desktop/기타/android_debug_keystore/debug.keystore')
-            storeFile file('/keystore/debug.keystore')
+            storeFile file('/Users/Shared/keystore/debug.keystore')
             storePassword 'android'
         }
         release {
             keyAlias 'winnerdiet'
             keyPassword 'dkcla0!'
             //storeFile file('/Users/godowondev/Desktop/app_winnerdiet/winnerdiet_android/winnerdietkeystore')
-            storeFile file('/keystore/winnerlifekeystore')
+            storeFile file('/Users/Shared/keystore/winnerlifekeystore')
             storePassword 'dkcla0!'
         }
     }
@@ -68,7 +68,11 @@ dependencies {
 
     //ADLIB
     implementation 'com.android.support:multidex:1.0.3'
-    implementation project(path: ':adlibr.5.0.0.2')
+    implementation project(path: ':adlib_v5.1.1')
+
+    //구글피트니스
+    implementation 'com.google.android.gms:play-services-fitness:15.0.0'
+    implementation 'com.google.android.gms:play-services-auth:15.0.0'
 }
 
 apply plugin: 'com.google.gms.google-services'
