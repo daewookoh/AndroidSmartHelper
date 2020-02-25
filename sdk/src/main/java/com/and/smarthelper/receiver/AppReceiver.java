@@ -4,17 +4,21 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
+import android.support.v4.content.ContextCompat;
 import android.telephony.SmsMessage;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.bestmafen.smablelib.component.SmaManager;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 import static android.content.Context.MODE_PRIVATE;
@@ -34,23 +38,44 @@ public class AppReceiver extends BroadcastReceiver {
 
         Log.d("TTT", intent.toString());
 
-
        if (intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
            Log.d("TTT", "SMS_RECEIVED");
+           /*
             if (SmaManager.getInstance().getEnabled(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION)) {
 
-                Bundle data  = intent.getExtras();
-                Object[] pdus = (Object[]) data.get("pdus");
-                SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) pdus[0]);
-                String sender = smsMessage.getDisplayOriginatingAddress();
-                String phoneNumber = smsMessage.getDisplayOriginatingAddress();
-                String senderNum = phoneNumber;
-                String messageBody = smsMessage.getMessageBody();
+                SharedPreferences pref = context.getSharedPreferences("shared_pref", MODE_PRIVATE);
+                String message_start_time = pref.getString("message_start_time","0");
+                String message_end_time = pref.getString("message_end_time","24");
 
-                String number = getContactName(senderNum, context);
-                SmaManager.getInstance().write(SmaManager.Cmd.NOTICE, SmaManager.Key.MESSAGE_v2, number, messageBody);
+                int message_start = Integer.valueOf(message_start_time);
+                int message_end = Integer.valueOf(message_end_time);
+
+
+                SimpleDateFormat format = new SimpleDateFormat("HH");
+                String hour = format.format(new Date());
+
+                Calendar calendar = Calendar.getInstance();
+                int curr_hour = calendar.get(Calendar.HOUR_OF_DAY);
+
+                Log.d("TTT", "curr_hour" + curr_hour);
+                Log.d("TTT", "phone_start" + message_start);
+                Log.d("TTT", "phone_end" + message_end);
+
+                if(curr_hour>message_start-1 && curr_hour<message_end) {
+                    Bundle data = intent.getExtras();
+                    Object[] pdus = (Object[]) data.get("pdus");
+                    SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) pdus[0]);
+                    String sender = smsMessage.getDisplayOriginatingAddress();
+                    String phoneNumber = smsMessage.getDisplayOriginatingAddress();
+                    String senderNum = phoneNumber;
+                    String messageBody = smsMessage.getMessageBody();
+
+                    String number = getContactName(senderNum, context);
+                    SmaManager.getInstance().write(SmaManager.Cmd.NOTICE, SmaManager.Key.MESSAGE_v2, number, messageBody);
+                }
 
             }
+            */
         } else{
 
             stateStr = intent.getExtras().getString(TelephonyManager.EXTRA_STATE);
@@ -139,9 +164,29 @@ public class AppReceiver extends BroadcastReceiver {
 
                 if (SmaManager.getInstance().getEnabled(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL) && number!=null ) {
 
-                    SmaManager.getInstance().write(SmaManager.Cmd.SET, SmaManager.Key.INTO_TAKE_PHOTO, false);
-                    SmaManager.getInstance().write(SmaManager.Cmd.NOTICE, SmaManager.Key.MESSAGE_v2, number, "Incoming Call");
-                    checkRepeat(number, context);
+                    SharedPreferences pref = context.getSharedPreferences("shared_pref", MODE_PRIVATE);
+                    String phone_start_time = pref.getString("phone_start_time","0");
+                    String phone_end_time = pref.getString("phone_end_time","24");
+
+                    int phone_start = Integer.valueOf(phone_start_time);
+                    int phone_end = Integer.valueOf(phone_end_time);
+
+
+                    SimpleDateFormat format = new SimpleDateFormat("HH");
+                    String hour = format.format(new Date());
+
+                    Calendar calendar = Calendar.getInstance();
+                    int curr_hour = calendar.get(Calendar.HOUR_OF_DAY);
+
+                    Log.d("TTT", "curr_hour" + curr_hour);
+                    Log.d("TTT", "phone_start" + phone_start);
+                    Log.d("TTT", "phone_end" + phone_end);
+
+                    if(curr_hour>phone_start-1 && curr_hour<phone_end) {
+                        SmaManager.getInstance().write(SmaManager.Cmd.SET, SmaManager.Key.INTO_TAKE_PHOTO, false);
+                        SmaManager.getInstance().write(SmaManager.Cmd.NOTICE, SmaManager.Key.MESSAGE_v2, number, "Incoming Call");
+                        checkRepeat(number, context);
+                    }
 
                 }
                 //onIncomingCallReceived(context, number, callStartTime);
@@ -194,13 +239,17 @@ public class AppReceiver extends BroadcastReceiver {
         String[] projection = new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME};
 
         String contactName="";
-        Cursor cursor=context.getContentResolver().query(uri,projection,null,null,null);
 
-        if (cursor != null) {
-            if(cursor.moveToFirst()) {
-                contactName=cursor.getString(0);
+        if(ContextCompat.checkSelfPermission(context, "android.permission.READ_SMS") == PackageManager.PERMISSION_GRANTED) {
+
+            Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
+
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    contactName = cursor.getString(0);
+                }
+                cursor.close();
             }
-            cursor.close();
         }
 
         Log.d("TTT", "getContactName" + phoneNumber + contactName);

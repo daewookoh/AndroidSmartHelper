@@ -26,31 +26,30 @@
 
 
     <string name="app_name">Smart Helper</string>
-    <string name="loading">Loading</string>
-    <string name="back">Back</string>
-    <string name="yes">Yes</string>
-    <string name="no">No</string>
-    <string name="wait">Please Wait</string>
-    <string name="data_updating">Updating data</string>
-    <string name="update_new_data">Updating new data</string>
-    <string name="not_connected_to_device">Not connected to device</string>
-    <string name="checking_connection">Checking Connection</string>
-    <string name="turn_on_bluetooth">Turn on bluethooth on the phone</string>
-    <string name="confirm_unbind">Do you want to disconnet?</string>
-    <string name="connect">Connect</string>
-    <string name="scan">Scan Device</string>
-    <string name="scanning">Scanning</string>
-    <string name="stop_scan">Stop Scan</string>
-    <string name="enable_bluetooth">Turn on the bluetooth on th phone</string>
+    <string name="loading">로딩중</string>
+    <string name="back">뒤로</string>
+    <string name="yes">네</string>
+    <string name="no">아니오</string>
+    <string name="data_updating">데이터 업데이트 진행중입니다</string>
+    <string name="update_new_data">신규 데이터 업데이트 중</string>
+    <string name="wait">잠시만 기다려 주세요</string>
+    <string name="not_connected_to_device">기기와 연결이 안되어 있습니다</string>
+    <string name="turn_on_bluetooth">휴대폰에서 블루투스 기능을 켜주세요</string>
+    <string name="checking_connection">기기연결 확인중</string>
+    <string name="confirm_unbind">연결을 끊으시겠습니까?</string>
+    <string name="connect">연결</string>
+    <string name="scan">기기 검색하기</string>
+    <string name="scanning">기기 검색중</string>
+    <string name="stop_scan">검색중지</string>
+    <string name="enable_bluetooth">휴대폰의 블루투스 기능을 켜주세요</string>
     <string name="percent0">0%</string>
     <string name="percent_d" formatted="false">%d%%</string>
     <string name="send_file">SEND FILE</string>
     <string name="send_agps">SEND AGPS</string>
     <!--华丽丽的分割线-->
     <string name="bind">Bind</string>
-    <string name="bind_tip">Press green button on the device</string>
-    <string name="unpair_tip">Your phone has paired with the Bluetooth device you selected,please unpair with it in
-        Bluetooth Settings first!</string>
+    <string name="bind_tip">기기에서 초록색 연동버튼을 눌러주세요</string>
+    <string name="unpair_tip">먼저 휴대전화 블루투스에 등록된 디바이스 목록에서 \'%s\' 장치를 해제하여 주십시오</string>
     <string name="unbind">Unbind</string>
     <string name="login">Login</string>
     <string name="connect_classic">Connect Classic</string>
@@ -126,6 +125,6 @@
     <string name="read_data">Read Data</string>
     <string name="format_percent" formatted="false">%d%%</string>
     <string name="current_version">current version</string>
-    <string name="cancel">CANCEL</string>
-    <string name="ok">OK</string>
+    <string name="cancel">취소</string>
+    <string name="ok">확인</string>
 </resources>

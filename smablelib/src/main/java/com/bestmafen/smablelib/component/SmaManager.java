@@ -673,6 +673,8 @@ public class SmaManager {
      */
     public void unbind() {
         L.d("SmaManager -> unbind");
+        clearAllTask();
+
         if (mBluetoothSocket != null) {
             try {
                 mBluetoothSocket.close();

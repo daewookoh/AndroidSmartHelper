@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.util.Log;
 
 import com.and.smarthelper.service.SmaService;
@@ -38,7 +39,16 @@ public class MyApplication extends Application {
         SmaManager.getInstance().init(this, true);
         // You can initialize without "true" to disable the music control function if your device dose not support it.
         //SmaManager.getInstance().init(this);
-        startService(new Intent(this, SmaService.class));
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Log.d("TTTS", "A");
+            startForegroundService(new Intent(this, SmaService.class));
+        } else {
+            Log.d("TTTS", "B");
+            startService(new Intent(this, SmaService.class));
+        }
+
+
         //startService(new Intent(this, NotificationService.class));
         KakaoSDK.init(new KakaoSDKAdapter());
     }

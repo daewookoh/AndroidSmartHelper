@@ -2,6 +2,7 @@ package com.and.smarthelper.service;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -10,6 +11,10 @@ import android.util.Log;
 
 import com.and.smarthelper.application.MyApplication;
 import com.bestmafen.smablelib.component.SmaManager;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 public class NotificationService extends NotificationListenerService {
     Context context;

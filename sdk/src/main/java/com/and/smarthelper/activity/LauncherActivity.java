@@ -14,12 +14,14 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
 import android.location.Criteria;
 import android.location.Location;
@@ -27,6 +29,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.media.ExifInterface;
 import android.media.MediaActionSound;
 import android.media.MediaPlayer;
 import android.media.MediaScannerConnection;
@@ -44,9 +47,11 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.renderscript.Element;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -56,6 +61,7 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.webkit.JavascriptInterface;
@@ -99,8 +105,35 @@ import com.bestmafen.smablelib.entity.SmaUserInfo;
 import com.bestmafen.smablelib.entity.SmaWeatherForecast;
 import com.bestmafen.smablelib.entity.SmaWeatherRealTime;
 import com.bestmafen.smablelib.util.SmaBleUtils;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.Scopes;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.Scope;
+import com.google.android.gms.fitness.Fitness;
+import com.google.android.gms.fitness.FitnessActivities;
+import com.google.android.gms.fitness.FitnessOptions;
+import com.google.android.gms.fitness.data.Bucket;
+import com.google.android.gms.fitness.data.DataPoint;
+import com.google.android.gms.fitness.data.DataSet;
+import com.google.android.gms.fitness.data.DataSource;
+import com.google.android.gms.fitness.data.DataType;
+import com.google.android.gms.fitness.data.WorkoutExercises;
+import com.google.android.gms.fitness.request.DataDeleteRequest;
+import com.google.android.gms.fitness.request.DataReadRequest;
+import com.google.android.gms.fitness.request.DataSourcesRequest;
+import com.google.android.gms.fitness.request.SessionInsertRequest;
+import com.google.android.gms.fitness.result.DataReadResponse;
+import com.google.android.gms.fitness.result.DataReadResult;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.kakao.auth.AuthType;
@@ -132,6 +165,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -147,13 +181,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 
 import static android.content.ContentValues.TAG;
+import static android.provider.Settings.System.DATE_FORMAT;
+import static com.google.android.gms.fitness.data.Field.FIELD_ACTIVITY;
+import static com.google.android.gms.fitness.data.Field.FIELD_BPM;
+import static com.google.android.gms.fitness.data.Field.FIELD_CALORIES;
+import static com.google.android.gms.fitness.data.Field.FIELD_DISTANCE;
+import static com.google.android.gms.fitness.data.Field.FIELD_DURATION;
+import static com.google.android.gms.fitness.data.Field.FIELD_EXERCISE;
+import static com.google.android.gms.fitness.data.Field.FIELD_STEPS;
+import static java.lang.Math.floor;
+import static java.lang.reflect.Field.*;
 
-public class LauncherActivity extends Activity {
+public class LauncherActivity extends Activity implements GoogleApiClient.OnConnectionFailedListener {
 
     Camera camera;
     boolean previewing = false;
@@ -208,7 +256,35 @@ public class LauncherActivity extends Activity {
     public static OAuthLogin mOAuthLoginModule;
 
     //구글피트니스
+    /*
+    FitnessOptions fitnessOptions = FitnessOptions.builder()
+            .addDataType(DataType.TYPE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_READ)
+            .addDataType(DataType.TYPE_STEP_COUNT_CUMULATIVE, FitnessOptions.ACCESS_READ)
+            .addDataType(DataType.TYPE_DISTANCE_DELTA, FitnessOptions.ACCESS_READ)
+            .addDataType(DataType.TYPE_ACTIVITY_SEGMENT, FitnessOptions.ACCESS_READ)
+            .addDataType(DataType.TYPE_CALORIES_EXPENDED, FitnessOptions.ACCESS_READ)
+            .addDataType(DataType.AGGREGATE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_READ)
+            .addDataType(DataType.AGGREGATE_DISTANCE_DELTA, FitnessOptions.ACCESS_READ)
+            .addDataType(DataType.AGGREGATE_ACTIVITY_SUMMARY, FitnessOptions.ACCESS_READ)
+            .addDataType(DataType.AGGREGATE_CALORIES_EXPENDED, FitnessOptions.ACCESS_READ)
+            .build();
+
+     */
+    private GoogleApiClient mGoogleApiClient;
     private static final int GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 0x1001;
+    //private static final int BODY_SENSOR_PERMISSIONS_REQUEST_CODE = 0x1002;
+    FitnessOptions fitnessOptions = FitnessOptions.builder()
+            .addDataType(DataType.TYPE_WORKOUT_EXERCISE, FitnessOptions.ACCESS_WRITE)
+            .addDataType(DataType.TYPE_DISTANCE_DELTA, FitnessOptions.ACCESS_WRITE)
+            .addDataType(DataType.TYPE_ACTIVITY_SEGMENT, FitnessOptions.ACCESS_WRITE)
+            .addDataType(DataType.TYPE_CALORIES_EXPENDED, FitnessOptions.ACCESS_WRITE)
+            .addDataType(DataType.TYPE_STEP_COUNT_DELTA, FitnessOptions.ACCESS_WRITE)
+            .addDataType(DataType.TYPE_HEART_RATE_BPM, FitnessOptions.ACCESS_READ)
+            .addDataType(DataType.TYPE_HEART_RATE_BPM, FitnessOptions.ACCESS_WRITE)
+            .addDataType(DataType.AGGREGATE_HEART_RATE_SUMMARY, FitnessOptions.ACCESS_WRITE)
+            .addDataType(DataType.AGGREGATE_HEART_RATE_SUMMARY, FitnessOptions.ACCESS_READ)
+            .build();
+
 
     //sns로그인공용
     String email = "";
@@ -223,6 +299,7 @@ public class LauncherActivity extends Activity {
 
     CameraSurfaceView surfaceView;
     ImageButton stopBtn;
+    ImageButton rotateBtn;
     private File file;
     static final int REQUEST_PERMISSION = 1003;
 
@@ -247,6 +324,7 @@ public class LauncherActivity extends Activity {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.RECEIVE_SMS,
+                Manifest.permission.READ_SMS,
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.READ_CONTACTS,
                 Manifest.permission.READ_CALL_LOG
@@ -277,6 +355,7 @@ public class LauncherActivity extends Activity {
         //surfaceHolder = surfaceView.getHolder();
         //surfaceHolder.addCallback(this);
         stopBtn = (ImageButton)findViewById(R.id.stop);
+        rotateBtn = (ImageButton)findViewById(R.id.rotate);
 
         mContext = this;
 
@@ -329,7 +408,7 @@ public class LauncherActivity extends Activity {
 
                     @Override
                     public void onBluetoothDisabled() {
-                        T.show(mContext, R.string.enable_bluetooth);
+                        T.show(mContext, getString(R.string.turn_on_bluetooth));
                     }
 
                     @Override
@@ -411,7 +490,7 @@ public class LauncherActivity extends Activity {
                 common.putSP("update_data_status",update_data_status);
 
                 if(update_data_status.isEmpty()) {
-                    T.show(mContext, "신규 데이터 업데이트 중");
+                    T.show(mContext, getString(R.string.update_new_data));
                     ReadDB.close();
 
                     runOnUiThread(new Runnable() {
@@ -496,7 +575,7 @@ public class LauncherActivity extends Activity {
                 common.putSP("update_data_status",update_data_status);
 
                 if(update_data_status.isEmpty()) {
-                    T.show(mContext, "신규 데이터 업데이트 중");
+                    T.show(mContext, getString(R.string.update_new_data));
                     ReadDB.close();
 
                     runOnUiThread(new Runnable() {
@@ -527,9 +606,36 @@ public class LauncherActivity extends Activity {
                 SQLiteDatabase ReadDB = openOrCreateDatabase(dbName, MODE_PRIVATE, null);
                 ReadDB.execSQL("UPDATE sleep SET synced=1 WHERE synced=0");
 
+                /*
+                int flag = 0;
+                String s_time = "";
+                String e_time = "";
+
+                 */
                 for (int i=0; i<list.size(); i++)
                 {
-                    insertSleepDB((SmaSleep)list.get(i));
+                    SmaSleep ss = (SmaSleep)list.get(i);
+                    insertSleepDB(ss);
+
+                    /*
+                    if(String.valueOf(ss.mode)=="17"){
+                        flag = 17;
+                        s_time = String.valueOf(ss.time);
+                    }
+
+                    if(String.valueOf(ss.mode)=="34" && flag==17){
+                        flag = 34;
+                        e_time = String.valueOf(ss.time);
+
+                        if(!s_time.isEmpty() && !e_time.isEmpty()){
+                            long startTime = Long.parseLong(s_time);
+                            long endTime = Long.parseLong(e_time);
+
+                            insertGooglefitSleep(startTime, endTime);
+                        }
+                    }
+
+                     */
                 }
 
                 //서버 DB 입력
@@ -581,7 +687,7 @@ public class LauncherActivity extends Activity {
                 common.putSP("update_data_status",update_data_status);
 
                 if(update_data_status.isEmpty()) {
-                    T.show(mContext, "신규 데이터 업데이트 중");
+                    T.show(mContext, getString(R.string.update_new_data));
                     ReadDB.close();
 
                     runOnUiThread(new Runnable() {
@@ -667,7 +773,7 @@ public class LauncherActivity extends Activity {
                 common.putSP("update_data_status",update_data_status);
 
                 if(update_data_status.isEmpty()) {
-                    T.show(mContext, "신규 데이터 업데이트 중");
+                    T.show(mContext, getString(R.string.update_new_data));
                     ReadDB.close();
 
                     runOnUiThread(new Runnable() {
@@ -752,7 +858,7 @@ public class LauncherActivity extends Activity {
                 common.putSP("update_data_status",update_data_status);
 
                 if(update_data_status.isEmpty()) {
-                    T.show(mContext, "신규 데이터 업데이트 중");
+                    T.show(mContext, getString(R.string.update_new_data));
                     ReadDB.close();
 
                     runOnUiThread(new Runnable() {
@@ -853,6 +959,7 @@ public class LauncherActivity extends Activity {
 
             @Override
             public void onReadBattery(final int battery) {//读取电量返回
+                //T.show(mContext, "onReadBattery -> " + battery);
                 runOnUiThread(new Runnable() {
 
                     @Override
@@ -1242,12 +1349,20 @@ public class LauncherActivity extends Activity {
                     + " (s_date, s_time, mode, step, calorie, distance, synced, mem_no) Values "
                     + "('"+data.date+"', '"+data.time+"', "+data.mode+", "+data.step+", "+data.calorie+", "+data.distance+", "+data.synced+","+mem_no+");");
 
+            insertGooglefitStep(data.step, data.time);
+
+
             myDB.close();
         }
         catch (SQLiteException se) {
             Toast.makeText(getApplicationContext(),  se.getMessage(), Toast.LENGTH_LONG).show();
             Log.e("",  se.getMessage());
         }
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
     }
 
     // 비동기식 http 통신
@@ -1276,7 +1391,12 @@ public class LauncherActivity extends Activity {
         @Override
         protected void onPostExecute(String s) {
 
-            if(s==null) {
+            if(s == null)
+            {
+                return;
+            }
+
+            if(s.isEmpty()) {
                 return;
             }
 
@@ -1474,6 +1594,8 @@ public class LauncherActivity extends Activity {
             myDB.execSQL("INSERT INTO heart "
                     + " (s_date, s_time, value, synced, mem_no) Values "
                     + "('"+data.date+"', '"+data.time+"', "+data.value+", "+data.synced+","+mem_no+");");
+
+            insertGooglefitHeart(data.value, data.time);
 
             myDB.close();
         }
@@ -1965,6 +2087,20 @@ public class LauncherActivity extends Activity {
 
     }
 
+    public void sendException(String data){
+
+        String mem_no = common.getSP("mem_no", "0");
+        String url = getResources().getString(R.string.api_url);
+        ContentValues values = new ContentValues();
+        values.put("action", "sendException");
+        values.put("data", data);
+        values.put("mem_no", mem_no);
+
+        HttpAsyncRequest httpAssyncRequest = new HttpAsyncRequest(url, values);
+        httpAssyncRequest.execute();
+
+    }
+
     // Create an image file
     private File createImageFile() throws IOException {
 
@@ -1984,876 +2120,900 @@ public class LauncherActivity extends Activity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    String allowed_app_list = common.getSP("allowed_app_list","EMPTY");
-                    String allowed_app_list2 = common.getSP("allowed_app_list2","EMPTY");
+                    String allowed_app_list = common.getSP("allowed_app_list", "EMPTY");
+                    String allowed_app_list2 = common.getSP("allowed_app_list2", "EMPTY");
 
                     boolean isConnected = mSmaManager.getInstance().isLoggedIn();
                     String isCon = String.valueOf(isConnected);
 
-                    if(data.startsWith("DATA_DETAIL__")) {
+                    try {
+                        if (data.startsWith("DATA_DETAIL__")) {
 
-                        String[] detail = data.split("__");
-                        String type = detail[1];
+                            String[] detail = data.split("__");
+                            String type = detail[1];
 
-                        switch (type) {
+                            switch (type) {
 
-                            case "CHECK_APP_INSTALLED":
-                                Boolean installed = appInstalled(String.valueOf(detail[2]));
-                                if(installed==true) {
-                                    doJavascript("javascript:appInstalled('" + String.valueOf(detail[2]) + "')");
-                                }else{
-                                    doJavascript("javascript:appNotInstalled('" + String.valueOf(detail[2]) + "')");
-                                }
-                                break;
-
-                            case "PHONE_REPEAT":
-                                String repeat = String.valueOf(detail[2]);
-                                common.putSP("phone_repeat", repeat);
-                                break;
-
-                            case "ALLOWED_APP_INSERT":
-                                String package_name = "/"+String.valueOf(detail[2])+"/";
-                                String package_name2 = "/"+String.valueOf(detail[2])+"_"+String.valueOf(detail[3])+"/";
-                                allowed_app_list += package_name;
-                                allowed_app_list2 += package_name2;
-
-                                common.putSP("allowed_app_list", allowed_app_list);
-                                common.putSP("allowed_app_list2", allowed_app_list2);
-                                break;
-
-                            case "ALLOWED_APP_DELETE":
-                                String package_name3 = "/"+String.valueOf(detail[2])+"/";
-                                String package_name4 = "/"+String.valueOf(detail[2])+"_"+String.valueOf(detail[3])+"/";
-                                String new_list = allowed_app_list.replaceAll(package_name3,"");
-                                common.putSP("allowed_app_list", new_list);
-                                String new_list2 = allowed_app_list2.replaceAll(package_name4,"");
-                                common.putSP("allowed_app_list2", new_list2);
-                                break;
-
-                            case "CHECK_UPDATE":
-
-                                int mem_no_app = checkMemNo();
-
-                                if(isCon=="true" && mem_no_app>0) {
-                                    //readDeviceSetup();
-                                    sendDB();
-
-                                    /*
-                                    String sport_date = detail[2];
-                                    String sport_time = detail[3];
-                                    String heart_date = detail[4];
-                                    String heart_time = detail[5];
-                                    String sleep_date = detail[6];
-                                    String sleep_time = detail[7];
-                                    String exercise_date = detail[8];
-                                    String tracker_date = detail[9];
-
-                                    sendDB(sport_date,sport_time,heart_date,heart_time,sleep_date, sleep_time, exercise_date, tracker_date);
-                                    */
-                                    /*
-                                    boolean update_success = sendDB(sport_date,sport_time,heart_date,heart_time,sleep_date, sleep_time, exercise_date, tracker_date);
-                                    if(update_success == true)
-                                    {
-                                        T.show(mContext, "신규 데이터 업데이트");
-                                        doJavascript("javascript:show_loading(4000)");
-                                        //doJavascript("javascript:reload_delay(3500)");
-                                    }
-                                    */
-
-                                }else{
-                                    //T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                //mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.READ_SEDENTARINESS);
-
-                                break;
-
-                            case "SETUP":
-                                Log.d("TTTL", "setup");
-                                if(isConnected) {
-                                    String lost_yn = String.valueOf(detail[2]);
-                                    String gesture_yn= String.valueOf(detail[3]);
-                                    String phone_yn = String.valueOf(detail[4]);
-                                    String message_yn = String.valueOf(detail[5]);
-
-                                    Log.d("TTTL", lost_yn + gesture_yn + phone_yn + message_yn);
-                                    if(lost_yn.equals("Y")) {
-                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_ANTI_LOST,true);
+                                case "CHECK_APP_INSTALLED":
+                                    Boolean installed = appInstalled(String.valueOf(detail[2]));
+                                    if (installed == true) {
+                                        doJavascript("javascript:appInstalled('" + String.valueOf(detail[2]) + "')");
                                     } else {
-                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_ANTI_LOST,false);
+                                        doJavascript("javascript:appNotInstalled('" + String.valueOf(detail[2]) + "')");
                                     }
-
-                                    if(gesture_yn.equals("Y")) {
-                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_RAISE_ON, true);
-                                    } else {
-                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_RAISE_ON, false);
-                                    }
-
-                                    if(phone_yn.equals("Y")){
-                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, true);
-                                    }else {
-                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, false);
-                                    }
-
-                                    if(message_yn.equals("Y")){
-                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION, true);
-                                    }else {
-                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION, false);
-                                    }
-                                }
-                                break;
-
-                            case "SIT":
-                                if(isConnected) {
-
-                                    SmaSedentarinessSettings ss = new SmaSedentarinessSettings();
-
-                                    ss.setStart1(Integer.parseInt(detail[2]));
-                                    ss.setEnd1(Integer.parseInt(detail[3]));
-                                    ss.setEnabled1(Integer.parseInt(detail[4]));
-                                    ss.setStart2(Integer.parseInt(detail[5]));
-                                    ss.setEnd2(Integer.parseInt(detail[6]));
-                                    ss.setEnabled2(Integer.parseInt(detail[7]));
-                                    ss.setRepeat(Integer.parseInt(detail[8]));
-                                    ss.setInterval(Integer.parseInt(detail[9]));
-
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_SEDENTARINESS, ss);
-                                }
-
-                                break;
-
-                            case "USER":
-                                if(isConnected) {
-                                    SmaUserInfo userInfo = new SmaUserInfo();
-                                    userInfo.gender = Integer.parseInt(detail[2]);
-                                    userInfo.age = Integer.parseInt(detail[3]);
-                                    userInfo.height = Float.parseFloat(detail[4]);
-                                    userInfo.weight = Float.parseFloat(detail[5]);
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_USER_INFO, userInfo);
-
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_GOAL, Integer.parseInt(detail[6]), 4);
-                                }
-
-                                break;
-
-                            case "ALARM":
-
-                                /*
-                                ArrayList<SmaAlarm> list = new ArrayList<>();
-                                list.clear();
-
-                                for (int i = 0; i < 4; i++) {//max length 8
-                                    SmaAlarm alarm = new SmaAlarm();
-                                    Calendar cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
-                                    cal.set(Calendar.HOUR_OF_DAY, i + 1);
-                                    alarm.setTime(cal.getTimeInMillis());
-                                    alarm.setTag("TAG" + (i + 1));
-                                    list.add(alarm);
-                                }
-
-                                mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_ALARMS, list);
-                                */
-
-
-                                List<SmaAlarm> alarms = new ArrayList<>();
-                                Calendar cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
-
-                                SmaAlarm alarm1 = new SmaAlarm();
-                                cal.set(Calendar.HOUR, Integer.parseInt(detail[2]));
-                                cal.set(Calendar.MINUTE, Integer.parseInt(detail[3]));
-                                alarm1.setTime(cal.getTimeInMillis());
-                                alarm1.setRepeat(Integer.parseInt(detail[4]));
-                                if(detail[5].equals("null"))
-                                {
-                                    alarm1.setTag(" ");
-                                }
-                                else {
-                                    alarm1.setTag(detail[5]);
-                                }
-                                alarm1.setEnabled(Integer.parseInt(detail[6]));
-
-                                SmaAlarm alarm2 = new SmaAlarm();
-                                cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
-                                cal.set(Calendar.HOUR, Integer.parseInt(detail[7]));
-                                cal.set(Calendar.MINUTE, Integer.parseInt(detail[8]));
-                                alarm2.setTime(cal.getTimeInMillis());
-                                alarm2.setRepeat(Integer.parseInt(detail[9]));
-                                if(detail[10].equals("null"))
-                                {
-                                    alarm2.setTag(" ");
-                                }
-                                else {
-                                    alarm2.setTag(detail[10]);
-                                }
-                                alarm2.setEnabled(Integer.parseInt(detail[11]));
-
-                                SmaAlarm alarm3 = new SmaAlarm();
-                                cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
-                                cal.set(Calendar.HOUR, Integer.parseInt(detail[12]));
-                                cal.set(Calendar.MINUTE, Integer.parseInt(detail[13]));
-                                alarm3.setTime(cal.getTimeInMillis());
-                                alarm3.setRepeat(Integer.parseInt(detail[14]));
-                                if(detail[15].equals("null"))
-                                {
-                                    alarm3.setTag(" ");
-                                }
-                                else {
-                                    alarm3.setTag(detail[15]);
-                                }
-                                alarm3.setEnabled(Integer.parseInt(detail[16]));
-
-                                SmaAlarm alarm4 = new SmaAlarm();
-                                cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
-                                cal.set(Calendar.HOUR, Integer.parseInt(detail[17]));
-                                cal.set(Calendar.MINUTE, Integer.parseInt(detail[18]));
-                                alarm4.setTime(cal.getTimeInMillis());
-                                alarm4.setRepeat(Integer.parseInt(detail[19]));
-                                if(detail[20].equals("null"))
-                                {
-                                    alarm4.setTag(" ");
-                                }
-                                else {
-                                    alarm4.setTag(detail[20]);
-                                }
-                                alarm4.setEnabled(Integer.parseInt(detail[21]));
-
-                                SmaAlarm alarm5 = new SmaAlarm();
-                                cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
-                                cal.set(Calendar.HOUR, Integer.parseInt(detail[22]));
-                                cal.set(Calendar.MINUTE, Integer.parseInt(detail[23]));
-                                alarm5.setTime(cal.getTimeInMillis());
-                                alarm5.setRepeat(Integer.parseInt(detail[24]));
-                                if(detail[25].equals("null"))
-                                {
-                                    alarm5.setTag(" ");
-                                }
-                                else {
-                                    alarm5.setTag(detail[25]);
-                                }
-                                alarm5.setEnabled(Integer.parseInt(detail[26]));
-
-                                SmaAlarm alarm6 = new SmaAlarm();
-                                cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
-                                cal.set(Calendar.HOUR, Integer.parseInt(detail[27]));
-                                cal.set(Calendar.MINUTE, Integer.parseInt(detail[28]));
-                                alarm6.setTime(cal.getTimeInMillis());
-                                alarm6.setRepeat(Integer.parseInt(detail[29]));
-                                if(detail[30].equals("null"))
-                                {
-                                    alarm6.setTag(" ");
-                                }
-                                else {
-                                    alarm6.setTag(detail[30]);
-                                }
-                                alarm6.setEnabled(Integer.parseInt(detail[31]));
-
-                                SmaAlarm alarm7 = new SmaAlarm();
-                                cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
-                                cal.set(Calendar.HOUR, Integer.parseInt(detail[32]));
-                                cal.set(Calendar.MINUTE, Integer.parseInt(detail[33]));
-                                alarm7.setTime(cal.getTimeInMillis());
-                                alarm7.setRepeat(Integer.parseInt(detail[34]));
-                                if(detail[35].equals("null"))
-                                {
-                                    alarm7.setTag("null");
-                                }
-                                else {
-                                    alarm7.setTag(detail[35]);
-                                }
-                                alarm7.setEnabled(Integer.parseInt(detail[36]));
-
-                                SmaAlarm alarm8 = new SmaAlarm();
-                                cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
-                                cal.set(Calendar.HOUR, Integer.parseInt(detail[37]));
-                                cal.set(Calendar.MINUTE, Integer.parseInt(detail[38]));
-                                alarm8.setTime(cal.getTimeInMillis());
-                                alarm8.setRepeat(Integer.parseInt(detail[39]));
-                                if(detail[40].equals("null"))
-                                {
-                                    alarm8.setTag(" ");
-                                }
-                                else {
-                                    alarm8.setTag(detail[40]);
-                                }
-                                alarm8.setEnabled(Integer.parseInt(detail[41]));
-
-                                int alarm_count = Integer.parseInt(detail[42]);
-
-                                for(int i=1; i<=alarm_count; i++) {
-                                    switch(i){
-                                        case 1:
-                                            alarms.add(alarm1);
-                                            break;
-
-                                        case 2:
-                                            alarms.add(alarm2);
-                                            break;
-
-                                        case 3:
-                                            alarms.add(alarm3);
-                                            break;
-
-                                        case 4:
-                                            alarms.add(alarm4);
-                                            break;
-
-                                        case 5:
-                                            alarms.add(alarm5);
-                                            break;
-
-                                        case 6:
-                                            alarms.add(alarm6);
-                                            break;
-
-                                        case 7:
-                                            alarms.add(alarm7);
-                                            break;
-
-                                        case 8:
-                                            alarms.add(alarm8);
-                                            break;
-                                    }
-                                }
-
-                                mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_ALARMS, alarms);
-
-
-                                break;
-
-                            case "HEART":
-                                if(isCon=="true") {
-                                    SmaHeartRateSettings hs = new SmaHeartRateSettings();
-                                    hs.setStart(Integer.parseInt(detail[2]));
-                                    hs.setEnd(Integer.parseInt(detail[3]));
-                                    hs.setEnabled(Integer.parseInt(detail[4]));
-                                    hs.setInterval(Integer.parseInt(detail[5]));
-
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_HEART_RATE, hs);
-                                }
-                                break;
-
-                            case "GESTURE":
-                                if(isCon=="true") {
-                                    SmaLightSettings light = new SmaLightSettings();
-                                    light.setStart1(Integer.parseInt(detail[2]));
-                                    light.setEnd1(Integer.parseInt(detail[3]));
-                                    light.setEnabled1(Integer.parseInt(detail[4]));
-
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_LIGHT_TIME, light);
-                                }
-                                break;
-
-                            case "LOGIN":
-                                String mem_no = String.valueOf(detail[2]);
-                                common.putSP("mem_no", mem_no);
-                                break;
-
-                        }
-
-                    }else{
-
-                        switch (data) {
-
-                            case "FINISH_APP":
-                                finishApp();
-                                break;
-
-                            case "KAKAO":
-                                loginKakao();
-                                break;
-
-                            case "NAVER":
-                                loginNaver();
-                                break;
-
-                            case "REFRESH_UNABLE" :
-                                refreshLayout.setEnabled(false);
-                                break;
-
-                            case "REFRESH_ENABLE" :
-                                refreshLayout.setEnabled(true);
-                                break;
-
-                            case "CHECK_UPDATE":
-
-                                int mem_no_app = checkMemNo();
-
-                                if(isCon=="true" && mem_no_app>0) {
-                                    //readDeviceSetup();
-                                    sendDB();
-                                }
-
-                                break;
-
-                            case "CHECK_CONNECTION":
-                                doJavascript("javascript:isConnected('" + isCon + "')");
-
-                                if(isCon=="true") {
-                                    readDeviceSetup();
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-
-                                break;
-
-                            case "CHECK_CONNECTION_TO_RELOAD":
-
-                                if(isCon=="true") {
-                                    doJavascript("javascript:reload()");
-                                }
-
-                                break;
-
-                            case "MAIN":
-                                startActivity(new Intent(mContext, CommandSetActivity.class));
-                                break;
-
-                            case "GET_APP_LIST":
-                                String app_list = common.getSP("allowed_app_list2","");
-                                doJavascript("javascript:appList('" + app_list + "')");
-                                break;
-
-                            case "LOGOUT":
-
-                                common.putSP("mem_no","0");
-                                break;
-
-                            case "MESSAGE_APP":
-
-                                new android.os.Handler().postDelayed(
-                                        new Runnable() {
-                                            public void run() {
-                                                progressDialog = new ProgressDialog(LauncherActivity.this);
-                                                progressDialog.setIndeterminate(true);
-                                                progressDialog.setMessage("잠시만 기다려 주세요");
-                                                progressDialog.show();
-                                            }
-                                        }, 0);
-                                startActivity(new Intent(mContext, AppSelectActivity.class));
-
-                                break;
-
-                            case "MESSAGE_ON":
-
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION, true);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                //T.show(mContext, "문자 & 푸시알림을 디바이스로 전달합니다");
-                                break;
-
-                            case "MESSAGE_OFF":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION, false);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "CALL" :
-                                if(isCon=="true") {
-                                    if (!mSmaManager.getEnabled(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL)) {
-                                        T.show(mContext, "Please go to 'SET' page to enable 'Call'");
-                                        return;
-                                    }
-                                    mSmaManager.write(SmaManager.Cmd.NOTICE, SmaManager.Key.MESSAGE_v2, "Developer", "Incoming Call");
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "REMOTE_ON":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, true);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "HEART_INTERVAL":
-                                if(isCon=="true") {
-                                    SmaHeartRateSettings srs = new SmaHeartRateSettings();
-                                    srs.setSynced(1);
-                                    srs.setEnabled(1);
-                                    srs.setInterval(30);
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_HEART_RATE, srs);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "SLEEP_ON":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_DETECT_SLEEP, true);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "SLEEP_OFF":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_DETECT_SLEEP, false);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "SET_USER":
-                                if(isCon=="true") {
-                                    SmaUserInfo userInfo = new SmaUserInfo();
-                                    userInfo.gender = 0;
-                                    userInfo.age = 20;
-                                    userInfo.height = 180f;
-                                    userInfo.weight = 70f;
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_USER_INFO, userInfo);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "DISTURB_ON":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NO_DISTURB, true);
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "DISTURB_OFF":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NO_DISTURB, false);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "GESTURE_ON":
-                                if(isCon=="true") {
-                                T.show(mContext, "손목을 들어올리면 화면을 켜줍니다");
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_RAISE_ON, true);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "GESTURE_OFF":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_RAISE_ON, false);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "PHONE_ON":
-                                if(isCon=="true") {
-                                    //T.show(mContext, "전화가 올경우 진동알림을 줍니다");
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, true);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "PHONE_OFF":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, false);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "SEND_MESSAGE":
-                                if(isCon=="true") {
-                                    if(mSmaManager.getEnabled(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION)) {
-                                        mSmaManager.write(SmaManager.Cmd.NOTICE, SmaManager.Key.MESSAGE_v2, "title", "content");
-                                    }
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-
-                            case "SET_TIME":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_SYSTEM, new byte[]{1});
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_TIMEZONE, new SmaTimezone());
-                                    SmaTime smaTime = new SmaTime();
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SYNC_TIME_2_DEVICE, smaTime);
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_LANGUAGE, SmaBleUtils.getLanguageCode(), 1);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    //T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "CAMERA":
-                                if(isCon=="true") {
-                                    T.show(mContext, "시계의 카메라 모양 버튼을 눌러 촬영하세요");
-                                    startCamera();
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-
-                            case "GET_GPS":
-                                getGPS();
-                                break;
-
-                            case "SET_WEATHER":
-                                if(isCon=="true") {
-                                    setWeather();
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-
-
-                                break;
-
-                            case "SIT_ON" :
-                                if(isCon=="true") {
-                                //mSmaManager.readData(new byte[]{SmaManager.Key.READ_SEDENTARINESS});
-                                //mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.READ_SEDENTARINESS);
-                                //SmaSedentarinessSettings ss = new SmaSedentarinessSettings();
-                                //Log.d("TTTL", String.valueOf(ss.getRepeat()));
-                                //mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_SEDENTARINESS, ss);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "SIT_OFF" :
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_SEDENTARINESS, false);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "24HOUR_ON" :
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_24HOUR, android.text.format.DateFormat.is24HourFormat(mContext));
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "24HOUR_OFF" :
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_24HOUR, !android.text.format.DateFormat.is24HourFormat(mContext));
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "LOST_ON":
-                                if(isCon=="true") {
-                                    T.show(mContext, "휴대전화와 블루투스 연결이 끊어지면 진동알람을 줍니다");
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_ANTI_LOST,true);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "LOST_OFF":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_ANTI_LOST, false);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "FIND_DEVICE":
-                                if(isCon=="true") {
-                                    T.show(mContext, "시계에 진동을 울려줍니다");
-                                    mSmaManager.write(SmaManager.Cmd.NOTICE, SmaManager.Key.FIND_DEVICE, true);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "SPORT":
-                                if(isCon=="true") {
-                                    mSmaManager.readData(new byte[]{SmaManager.Key.SPORT});
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "SPORT2":
-                                if(isCon=="true") {
-                                    mSmaManager.readData(new byte[]{SmaManager.Key.SPORT2});
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "READ_DB":
-                                readDB();
-                                break;
-
-                            case "RATE":
-                                if(isCon=="true") {
-                                    mSmaManager.readData(new byte[]{SmaManager.Key.RATE});
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "SLEEP":
-                                if(isCon=="true") {
-                                    mSmaManager.readData(new byte[]{SmaManager.Key.SLEEP});
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "BATTERY":
-                                if(isCon=="true") {
-                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.READ_BATTERY);
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    //T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-
-                                break;
-
-                            case "SCAN":
-                                mSmaManager.unbind();
-                                //SmaManager.getInstance().unbind();
-                                startActivity(new Intent(mContext, BindActivity.class));
-
-                                break;
-
-
-                            case "APP_SETTING":
-                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                intent.setData(Uri.parse("package:" + mContext.getPackageName()));
-                                startActivity(intent);
-                                break;
-
-                            case "AGPS":
-                                if(isCon=="true") {
-
-                                    DownloadManager downloadmanager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-                                    Uri uri = Uri.parse("http://wepodownload.mediatek.com/EPO_GR_3_1.DAT");
-
-                                    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
-                                    String file_name = "AGPS_" + sdf.format(new Date()) + ".dat";
-
-                                    DownloadManager.Request request = new DownloadManager.Request(uri);
-                                    //request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                                    request.setDestinationInExternalPublicDir(fileDir, file_name);
-                                    long id = downloadmanager.enqueue(request);
-
-                                    final Timer timer = new Timer();
-                                    timer.schedule(new downloadTimer(id, file_name), 1500);
-
-                                    //startActivity(new Intent(mContext, CommandSendFileActivity.class));
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
-
-                            case "UNBIND":
-                                if(isCon=="true") {
-                                    if (mSmaManager.isBond()) {
-                                        if (mDialog == null) {
-                                            mDialog = new AlertDialog.Builder(mContext)
-                                                    .setMessage(getString(R.string.confirm_unbind))
-                                                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-
-                                                        @Override
-                                                        public void onClick(DialogInterface dialog, int which) {
-                                                            mSmaManager.unbind();
-                                                            //startActivity(new Intent(mContext, BindActivity.class));
-                                                            setResult(RESULT_OK);
-                                                            doJavascript("javascript:reload()");
-                                                            //finish();
-                                                        }
-                                                    })
-                                                    .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-
-                                                        @Override
-                                                        public void onClick(DialogInterface dialog, int which) {
-
-                                                        }
-                                                    }).create();
+                                    break;
+
+                                case "PHONE_START_TIME":
+                                    String phone_start_time = String.valueOf(detail[2]);
+                                    common.putSP("phone_start_time", phone_start_time);
+                                    break;
+
+                                case "PHONE_END_TIME":
+                                    String phone_end_time = String.valueOf(detail[2]);
+                                    common.putSP("phone_end_time", phone_end_time);
+                                    break;
+
+                                case "MESSAGE_START_TIME":
+                                    String message_start_time = String.valueOf(detail[2]);
+                                    common.putSP("message_start_time", message_start_time);
+                                    break;
+
+                                case "MESSAGE_END_TIME":
+                                    String message_end_time = String.valueOf(detail[2]);
+                                    common.putSP("message_end_time", message_end_time);
+                                    break;
+
+                                case "PHONE_REPEAT":
+                                    String repeat = String.valueOf(detail[2]);
+                                    common.putSP("phone_repeat", repeat);
+                                    break;
+
+                                case "ALLOWED_APP_INSERT":
+                                    String package_name = "/" + String.valueOf(detail[2]) + "/";
+                                    String package_name2 = "/" + String.valueOf(detail[2]) + "_" + String.valueOf(detail[3]) + "/";
+                                    allowed_app_list += package_name;
+                                    allowed_app_list2 += package_name2;
+
+                                    common.putSP("allowed_app_list", allowed_app_list);
+                                    common.putSP("allowed_app_list2", allowed_app_list2);
+                                    break;
+
+                                case "ALLOWED_APP_DELETE":
+                                    String package_name3 = "/" + String.valueOf(detail[2]) + "/";
+                                    String package_name4 = "/" + String.valueOf(detail[2]) + "_" + String.valueOf(detail[3]) + "/";
+                                    String new_list = allowed_app_list.replaceAll(package_name3, "");
+                                    common.putSP("allowed_app_list", new_list);
+                                    String new_list2 = allowed_app_list2.replaceAll(package_name4, "");
+                                    common.putSP("allowed_app_list2", new_list2);
+                                    break;
+
+                                case "CHECK_UPDATE":
+
+                                    int mem_no_app = checkMemNo();
+
+                                    if (isCon == "true" && mem_no_app > 0) {
+                                        //readDeviceSetup();
+                                        sendDB();
+
+                                        /*
+                                        String sport_date = detail[2];
+                                        String sport_time = detail[3];
+                                        String heart_date = detail[4];
+                                        String heart_time = detail[5];
+                                        String sleep_date = detail[6];
+                                        String sleep_time = detail[7];
+                                        String exercise_date = detail[8];
+                                        String tracker_date = detail[9];
+
+                                        sendDB(sport_date,sport_time,heart_date,heart_time,sleep_date, sleep_time, exercise_date, tracker_date);
+                                        */
+                                        /*
+                                        boolean update_success = sendDB(sport_date,sport_time,heart_date,heart_time,sleep_date, sleep_time, exercise_date, tracker_date);
+                                        if(update_success == true)
+                                        {
+                                            T.show(mContext, "신규 데이터 업데이트");
+                                            doJavascript("javascript:show_loading(4000)");
+                                            //doJavascript("javascript:reload_delay(3500)");
                                         }
-                                        mDialog.show();
+                                        */
+
+                                    } else {
+                                        //T.show(mContext, "기기와 연결이 안되어 있습니다");
                                     }
-                                }else if(btAdapter.isEnabled()!=true){
-                                    T.show(mContext, "휴대폰에서 블루투스 기능을 켜주세요");
-                                }else{
-                                    T.show(mContext, "기기와 연결이 안되어 있습니다");
-                                }
-                                break;
+                                    //mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.READ_SEDENTARINESS);
 
-                            case "SHOW_ADLIB_REWARD_AD" :
-                                adlibManager.loadFullInterstitialAd(mContext, new Handler(){
-                                    public void handleMessage(Message message) {
-                                        common.log(String.valueOf(message));
+                                    break;
 
-                                        try {
+                                case "SETUP":
+                                    Log.d("TTTL", "setup");
+                                    if (isConnected) {
+                                        String lost_yn = String.valueOf(detail[2]);
+                                        String gesture_yn = String.valueOf(detail[3]);
+                                        String phone_yn = String.valueOf(detail[4]);
+                                        String message_yn = String.valueOf(detail[5]);
+
+                                        Log.d("TTTL", lost_yn + gesture_yn + phone_yn + message_yn);
+                                        if (lost_yn.equals("Y")) {
+                                            mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_ANTI_LOST, true);
+                                        } else {
+                                            mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_ANTI_LOST, false);
+                                        }
+
+                                        if (gesture_yn.equals("Y")) {
+                                            mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_RAISE_ON, true);
+                                        } else {
+                                            mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_RAISE_ON, false);
+                                        }
+
+                                        if (phone_yn.equals("Y")) {
+                                            mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, true);
+                                        } else {
+                                            mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, false);
+                                        }
+
+                                        if (message_yn.equals("Y")) {
+                                            mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION, true);
+                                        } else {
+                                            mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION, false);
+                                        }
+                                    }
+                                    break;
+
+                                case "SIT":
+                                    if (isConnected) {
+
+                                        SmaSedentarinessSettings ss = new SmaSedentarinessSettings();
+
+                                        ss.setStart1(Integer.parseInt(detail[2]));
+                                        ss.setEnd1(Integer.parseInt(detail[3]));
+                                        ss.setEnabled1(Integer.parseInt(detail[4]));
+                                        ss.setStart2(Integer.parseInt(detail[5]));
+                                        ss.setEnd2(Integer.parseInt(detail[6]));
+                                        ss.setEnabled2(Integer.parseInt(detail[7]));
+                                        ss.setRepeat(Integer.parseInt(detail[8]));
+                                        ss.setInterval(Integer.parseInt(detail[9]));
+
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_SEDENTARINESS, ss);
+                                    }
+
+                                    break;
+
+                                case "USER":
+                                    if (isConnected) {
+                                        SmaUserInfo userInfo = new SmaUserInfo();
+                                        userInfo.gender = Integer.parseInt(detail[2]);
+                                        userInfo.age = Integer.parseInt(detail[3]);
+                                        userInfo.height = Float.parseFloat(detail[4]);
+                                        userInfo.weight = Float.parseFloat(detail[5]);
+
+                                        common.putSP("user_gender", detail[2]);
+                                        common.putSP("user_height", detail[4]);
+                                        common.putSP("user_weight", detail[5]);
+
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_USER_INFO, userInfo);
+
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_GOAL, Integer.parseInt(detail[6]), 4);
+                                    }
+
+                                    break;
+
+                                case "ALARM":
+
+                                    /*
+                                    ArrayList<SmaAlarm> list = new ArrayList<>();
+                                    list.clear();
+
+                                    for (int i = 0; i < 4; i++) {//max length 8
+                                        SmaAlarm alarm = new SmaAlarm();
+                                        Calendar cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
+                                        cal.set(Calendar.HOUR_OF_DAY, i + 1);
+                                        alarm.setTime(cal.getTimeInMillis());
+                                        alarm.setTag("TAG" + (i + 1));
+                                        list.add(alarm);
+                                    }
+
+                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_ALARMS, list);
+                                    */
+
+
+                                    List<SmaAlarm> alarms = new ArrayList<>();
+                                    Calendar cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
+
+                                    SmaAlarm alarm1 = new SmaAlarm();
+                                    cal.set(Calendar.HOUR, Integer.parseInt(detail[2]));
+                                    cal.set(Calendar.MINUTE, Integer.parseInt(detail[3]));
+                                    alarm1.setTime(cal.getTimeInMillis());
+                                    alarm1.setRepeat(Integer.parseInt(detail[4]));
+                                    if (detail[5].equals("null")) {
+                                        alarm1.setTag(" ");
+                                    } else {
+                                        alarm1.setTag(detail[5]);
+                                    }
+                                    alarm1.setEnabled(Integer.parseInt(detail[6]));
+
+                                    SmaAlarm alarm2 = new SmaAlarm();
+                                    cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
+                                    cal.set(Calendar.HOUR, Integer.parseInt(detail[7]));
+                                    cal.set(Calendar.MINUTE, Integer.parseInt(detail[8]));
+                                    alarm2.setTime(cal.getTimeInMillis());
+                                    alarm2.setRepeat(Integer.parseInt(detail[9]));
+                                    if (detail[10].equals("null")) {
+                                        alarm2.setTag(" ");
+                                    } else {
+                                        alarm2.setTag(detail[10]);
+                                    }
+                                    alarm2.setEnabled(Integer.parseInt(detail[11]));
+
+                                    SmaAlarm alarm3 = new SmaAlarm();
+                                    cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
+                                    cal.set(Calendar.HOUR, Integer.parseInt(detail[12]));
+                                    cal.set(Calendar.MINUTE, Integer.parseInt(detail[13]));
+                                    alarm3.setTime(cal.getTimeInMillis());
+                                    alarm3.setRepeat(Integer.parseInt(detail[14]));
+                                    if (detail[15].equals("null")) {
+                                        alarm3.setTag(" ");
+                                    } else {
+                                        alarm3.setTag(detail[15]);
+                                    }
+                                    alarm3.setEnabled(Integer.parseInt(detail[16]));
+
+                                    SmaAlarm alarm4 = new SmaAlarm();
+                                    cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
+                                    cal.set(Calendar.HOUR, Integer.parseInt(detail[17]));
+                                    cal.set(Calendar.MINUTE, Integer.parseInt(detail[18]));
+                                    alarm4.setTime(cal.getTimeInMillis());
+                                    alarm4.setRepeat(Integer.parseInt(detail[19]));
+                                    if (detail[20].equals("null")) {
+                                        alarm4.setTag(" ");
+                                    } else {
+                                        alarm4.setTag(detail[20]);
+                                    }
+                                    alarm4.setEnabled(Integer.parseInt(detail[21]));
+
+                                    SmaAlarm alarm5 = new SmaAlarm();
+                                    cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
+                                    cal.set(Calendar.HOUR, Integer.parseInt(detail[22]));
+                                    cal.set(Calendar.MINUTE, Integer.parseInt(detail[23]));
+                                    alarm5.setTime(cal.getTimeInMillis());
+                                    alarm5.setRepeat(Integer.parseInt(detail[24]));
+                                    if (detail[25].equals("null")) {
+                                        alarm5.setTag(" ");
+                                    } else {
+                                        alarm5.setTag(detail[25]);
+                                    }
+                                    alarm5.setEnabled(Integer.parseInt(detail[26]));
+
+                                    SmaAlarm alarm6 = new SmaAlarm();
+                                    cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
+                                    cal.set(Calendar.HOUR, Integer.parseInt(detail[27]));
+                                    cal.set(Calendar.MINUTE, Integer.parseInt(detail[28]));
+                                    alarm6.setTime(cal.getTimeInMillis());
+                                    alarm6.setRepeat(Integer.parseInt(detail[29]));
+                                    if (detail[30].equals("null")) {
+                                        alarm6.setTag(" ");
+                                    } else {
+                                        alarm6.setTag(detail[30]);
+                                    }
+                                    alarm6.setEnabled(Integer.parseInt(detail[31]));
+
+                                    SmaAlarm alarm7 = new SmaAlarm();
+                                    cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
+                                    cal.set(Calendar.HOUR, Integer.parseInt(detail[32]));
+                                    cal.set(Calendar.MINUTE, Integer.parseInt(detail[33]));
+                                    alarm7.setTime(cal.getTimeInMillis());
+                                    alarm7.setRepeat(Integer.parseInt(detail[34]));
+                                    if (detail[35].equals("null")) {
+                                        alarm7.setTag("null");
+                                    } else {
+                                        alarm7.setTag(detail[35]);
+                                    }
+                                    alarm7.setEnabled(Integer.parseInt(detail[36]));
+
+                                    SmaAlarm alarm8 = new SmaAlarm();
+                                    cal = Calendar.getInstance(SmaBleUtils.getDefaultTimeZone());
+                                    cal.set(Calendar.HOUR, Integer.parseInt(detail[37]));
+                                    cal.set(Calendar.MINUTE, Integer.parseInt(detail[38]));
+                                    alarm8.setTime(cal.getTimeInMillis());
+                                    alarm8.setRepeat(Integer.parseInt(detail[39]));
+                                    if (detail[40].equals("null")) {
+                                        alarm8.setTag(" ");
+                                    } else {
+                                        alarm8.setTag(detail[40]);
+                                    }
+                                    alarm8.setEnabled(Integer.parseInt(detail[41]));
+
+                                    int alarm_count = Integer.parseInt(detail[42]);
+
+                                    for (int i = 1; i <= alarm_count; i++) {
+                                        switch (i) {
+                                            case 1:
+                                                alarms.add(alarm1);
+                                                break;
+
+                                            case 2:
+                                                alarms.add(alarm2);
+                                                break;
+
+                                            case 3:
+                                                alarms.add(alarm3);
+                                                break;
+
+                                            case 4:
+                                                alarms.add(alarm4);
+                                                break;
+
+                                            case 5:
+                                                alarms.add(alarm5);
+                                                break;
+
+                                            case 6:
+                                                alarms.add(alarm6);
+                                                break;
+
+                                            case 7:
+                                                alarms.add(alarm7);
+                                                break;
+
+                                            case 8:
+                                                alarms.add(alarm8);
+                                                break;
+                                        }
+                                    }
+
+                                    mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_ALARMS, alarms);
+
+
+                                    break;
+
+                                case "HEART":
+                                    if (isCon == "true") {
+                                        SmaHeartRateSettings hs = new SmaHeartRateSettings();
+                                        hs.setStart(Integer.parseInt(detail[2]));
+                                        hs.setEnd(Integer.parseInt(detail[3]));
+                                        hs.setEnabled(Integer.parseInt(detail[4]));
+                                        hs.setInterval(Integer.parseInt(detail[5]));
+
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_HEART_RATE, hs);
+                                    }
+                                    break;
+
+                                case "GESTURE":
+                                    if (isCon == "true") {
+                                        SmaLightSettings light = new SmaLightSettings();
+                                        light.setStart1(Integer.parseInt(detail[2]));
+                                        light.setEnd1(Integer.parseInt(detail[3]));
+                                        light.setEnabled1(Integer.parseInt(detail[4]));
+
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_LIGHT_TIME, light);
+                                    }
+                                    break;
+
+                                case "LOGIN":
+                                    String mem_no = String.valueOf(detail[2]);
+                                    common.putSP("mem_no", mem_no);
+                                    break;
+
+                            }
+
+                        } else {
+
+                            switch (data) {
+
+                                case "LINK_GOOGLEFIT":
+                                    linkGooglefit();
+                                    break;
+
+                                case "UNLINK_GOOGLEFIT":
+                                    unlinkGooglefit();
+                                    break;
+
+                                case "FINISH_APP":
+                                    finishApp();
+                                    break;
+
+                                case "KAKAO":
+                                    loginKakao();
+                                    break;
+
+                                case "NAVER":
+                                    loginNaver();
+                                    break;
+
+                                case "REFRESH_UNABLE":
+                                    refreshLayout.setEnabled(false);
+                                    break;
+
+                                case "REFRESH_ENABLE":
+                                    refreshLayout.setEnabled(true);
+                                    break;
+
+                                case "CHECK_UPDATE":
+
+                                    int mem_no_app = checkMemNo();
+
+                                    if (isCon == "true" && mem_no_app > 0) {
+                                        //readDeviceSetup();
+                                        sendDB();
+                                    }
+
+                                    break;
+
+                                case "CHECK_CONNECTION":
+                                    doJavascript("javascript:isConnected('" + isCon + "')");
+
+                                    if (isCon == "true") {
+                                        readDeviceSetup();
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+
+                                    break;
+
+                                case "CHECK_CONNECTION_TO_RELOAD":
+
+                                    if (isCon == "true") {
+                                        doJavascript("javascript:reload()");
+                                    }
+
+                                    break;
+
+                                case "MAIN":
+                                    startActivity(new Intent(mContext, CommandSetActivity.class));
+                                    break;
+
+                                case "GET_APP_LIST":
+                                    String app_list = common.getSP("allowed_app_list2", "");
+                                    doJavascript("javascript:appList('" + app_list + "')");
+                                    break;
+
+                                case "LOGOUT":
+
+                                    common.putSP("mem_no", "0");
+                                    break;
+
+                                case "MESSAGE_APP":
+
+                                    new android.os.Handler().postDelayed(
+                                            new Runnable() {
+                                                public void run() {
+                                                    progressDialog = new ProgressDialog(LauncherActivity.this);
+                                                    progressDialog.setIndeterminate(true);
+                                                    progressDialog.setMessage(getString(R.string.wait));
+                                                    progressDialog.show();
+                                                }
+                                            }, 0);
+                                    startActivity(new Intent(mContext, AppSelectActivity.class));
+
+                                    break;
+
+                                case "MESSAGE_ON":
+
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION, true);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    //T.show(mContext, "문자 & 푸시알림을 디바이스로 전달합니다");
+                                    break;
+
+                                case "MESSAGE_OFF":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION, false);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "CALL":
+                                    if (isCon == "true") {
+                                        if (!mSmaManager.getEnabled(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL)) {
+                                            T.show(mContext, "Please go to 'SET' page to enable 'Call'");
+                                            return;
+                                        }
+                                        mSmaManager.write(SmaManager.Cmd.NOTICE, SmaManager.Key.MESSAGE_v2, "Developer", "Incoming Call");
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "REMOTE_ON":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, true);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "HEART_INTERVAL":
+                                    if (isCon == "true") {
+                                        SmaHeartRateSettings srs = new SmaHeartRateSettings();
+                                        srs.setSynced(1);
+                                        srs.setEnabled(1);
+                                        srs.setInterval(30);
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_HEART_RATE, srs);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "SLEEP_ON":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_DETECT_SLEEP, true);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "SLEEP_OFF":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_DETECT_SLEEP, false);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "SET_USER":
+                                    if (isCon == "true") {
+                                        SmaUserInfo userInfo = new SmaUserInfo();
+                                        userInfo.gender = 0;
+                                        userInfo.age = 20;
+                                        userInfo.height = 180f;
+                                        userInfo.weight = 70f;
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_USER_INFO, userInfo);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "DISTURB_ON":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NO_DISTURB, true);
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "DISTURB_OFF":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NO_DISTURB, false);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "GESTURE_ON":
+                                    if (isCon == "true") {
+                                        //T.show(mContext, "손목을 들어올리면 화면을 켜줍니다");
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_RAISE_ON, true);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "GESTURE_OFF":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_RAISE_ON, false);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "PHONE_ON":
+                                    if (isCon == "true") {
+                                        //T.show(mContext, "전화가 올경우 진동알림을 줍니다");
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, true);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "PHONE_OFF":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_CALL, false);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "SEND_MESSAGE":
+                                    if (isCon == "true") {
+                                        if (mSmaManager.getEnabled(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_NOTIFICATION)) {
+                                            mSmaManager.write(SmaManager.Cmd.NOTICE, SmaManager.Key.MESSAGE_v2, "title", "content");
+                                        }
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+
+                                case "SET_TIME":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_SYSTEM, new byte[]{1});
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_TIMEZONE, new SmaTimezone());
+                                        SmaTime smaTime = new SmaTime();
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SYNC_TIME_2_DEVICE, smaTime);
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_LANGUAGE, SmaBleUtils.getLanguageCode(), 1);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        //T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "CAMERA":
+                                    if (isCon == "true") {
+                                        //T.show(mContext, "시계의 카메라 모양 버튼을 눌러 촬영하세요");
+                                        startCamera();
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+
+                                case "GET_GPS":
+                                    getGPS();
+                                    break;
+
+                                case "SET_WEATHER":
+                                    if (isCon == "true") {
+                                        setWeather();
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+
+
+                                    break;
+
+                                case "SIT_ON":
+                                    if (isCon == "true") {
+                                        //mSmaManager.readData(new byte[]{SmaManager.Key.READ_SEDENTARINESS});
+                                        //mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.READ_SEDENTARINESS);
+                                        //SmaSedentarinessSettings ss = new SmaSedentarinessSettings();
+                                        //Log.d("TTTL", String.valueOf(ss.getRepeat()));
+                                        //mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_SEDENTARINESS, ss);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "SIT_OFF":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_SEDENTARINESS, false);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "24HOUR_ON":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_24HOUR, android.text.format.DateFormat.is24HourFormat(mContext));
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "24HOUR_OFF":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.SET_24HOUR, !android.text.format.DateFormat.is24HourFormat(mContext));
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "LOST_ON":
+                                    if (isCon == "true") {
+                                        //T.show(mContext, "휴대전화와 블루투스 연결이 끊어지면 진동알람을 줍니다");
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_ANTI_LOST, true);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "LOST_OFF":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.ENABLE_ANTI_LOST, false);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "FIND_DEVICE":
+                                    if (isCon == "true") {
+                                        //T.show(mContext, "시계에 진동을 울려줍니다");
+                                        mSmaManager.write(SmaManager.Cmd.NOTICE, SmaManager.Key.FIND_DEVICE, true);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "SPORT":
+                                    if (isCon == "true") {
+                                        mSmaManager.readData(new byte[]{SmaManager.Key.SPORT});
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "SPORT2":
+                                    if (isCon == "true") {
+                                        mSmaManager.readData(new byte[]{SmaManager.Key.SPORT2});
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "READ_DB":
+                                    readDB();
+                                    break;
+
+                                case "RATE":
+                                    if (isCon == "true") {
+                                        mSmaManager.readData(new byte[]{SmaManager.Key.RATE});
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "SLEEP":
+                                    if (isCon == "true") {
+                                        mSmaManager.readData(new byte[]{SmaManager.Key.SLEEP});
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "BATTERY":
+                                    if (isCon == "true") {
+                                        mSmaManager.write(SmaManager.Cmd.SET, SmaManager.Key.READ_BATTERY);
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        //T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+
+                                    break;
+
+                                case "SCAN":
+                                    mSmaManager.unbind();
+                                    //SmaManager.getInstance().unbind();
+                                    startActivity(new Intent(mContext, BindActivity.class));
+
+                                    break;
+
+
+                                case "APP_SETTING":
+                                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                    intent.setData(Uri.parse("package:" + mContext.getPackageName()));
+                                    startActivity(intent);
+                                    break;
+
+                                case "AGPS":
+                                    if (isCon == "true") {
+
+                                        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                                            T.show(mContext, "설정->앱권한->저장공간 권한필요");
+
+                                            break;
+                                        }
+
+                                        DownloadManager downloadmanager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                                        Uri uri = Uri.parse("http://wepodownload.mediatek.com/EPO_GR_3_1.DAT");
+
+                                        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+                                        String file_name = "AGPS_" + sdf.format(new Date()) + ".dat";
+
+                                        DownloadManager.Request request = new DownloadManager.Request(uri);
+                                        //request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                                        request.setDestinationInExternalPublicDir(fileDir, file_name);
+                                        long id = downloadmanager.enqueue(request);
+
+                                        final Timer timer = new Timer();
+                                        timer.schedule(new downloadTimer(id, file_name), 1500);
+
+                                        //startActivity(new Intent(mContext, CommandSendFileActivity.class));
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "UNBIND":
+                                    if (isCon == "true") {
+                                        if (mSmaManager.isBond()) {
+                                            if (mDialog == null) {
+                                                mDialog = new AlertDialog.Builder(mContext)
+                                                        .setMessage(getString(R.string.confirm_unbind))
+                                                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+
+                                                            @Override
+                                                            public void onClick(DialogInterface dialog, int which) {
+                                                                mSmaManager.unbind();
+                                                                //startActivity(new Intent(mContext, BindActivity.class));
+                                                                setResult(RESULT_OK);
+                                                                doJavascript("javascript:reload()");
+                                                                //finish();
+                                                            }
+                                                        })
+                                                        .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+
+                                                            @Override
+                                                            public void onClick(DialogInterface dialog, int which) {
+
+                                                            }
+                                                        }).create();
+                                            }
+                                            mDialog.show();
+                                        }
+                                    } else if (btAdapter.isEnabled() != true) {
+                                        T.show(mContext, getString(R.string.turn_on_bluetooth));
+                                    } else {
+                                        T.show(mContext, getString(R.string.not_connected_to_device));
+                                    }
+                                    break;
+
+                                case "SHOW_ADLIB_REWARD_AD":
+                                    adlibManager.loadFullInterstitialAd(mContext, new Handler() {
+                                        public void handleMessage(Message message) {
+                                            webView.resumeTimers();
+                                            common.log(String.valueOf(message));
+
                                             switch (message.what) {
                                                 case 2:
                                                     doJavascript("javascript:rewardComplete()");
@@ -2879,19 +3039,17 @@ public class LauncherActivity extends Activity {
                                                     break;
                                             }
 
-                                        } catch (Exception e) {
+
                                         }
+                                    });
+                                    break;
 
-                                    }
-                                });
-                                break;
+                                case "SHOW_ADLIB_FRONT_AD":
+                                    adlibManager.loadFullInterstitialAd(mContext, new Handler() {
+                                        public void handleMessage(Message message) {
+                                            webView.resumeTimers();
+                                            common.log(String.valueOf(message));
 
-                            case "SHOW_ADLIB_FRONT_AD" :
-                                adlibManager.loadFullInterstitialAd(mContext, new Handler(){
-                                    public void handleMessage(Message message) {
-                                        common.log(String.valueOf(message));
-
-                                        try {
                                             switch (message.what) {
                                                 // 전면배너 스케줄링 사용시, 각각의 플랫폼의 수신 실패 이벤트를 받습니다.
                                                 case AdlibManager.DID_ERROR:
@@ -2904,17 +3062,19 @@ public class LauncherActivity extends Activity {
                                                     break;
                                             }
 
-                                        } catch (Exception e) {
+
                                         }
-
-                                    }
-                                });
-                                break;
+                                    });
+                                    break;
 
 
+                            }
                         }
                     }
-
+                    catch (Exception e) {
+                        e.printStackTrace();
+                        sendException(data + " : " + e);
+                    }
                 }
             });
         }
@@ -2953,12 +3113,10 @@ public class LauncherActivity extends Activity {
         surfaceView.capture(new Camera.PictureCallback() {
             @Override
             public void onPictureTaken(byte[] data, Camera camera) {
-                try {
 
+                try {
                     Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
                     saveImage(bitmap);
-
-
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -2985,7 +3143,7 @@ public class LauncherActivity extends Activity {
 
         if(!update_data_status.isEmpty() && data_gap<10)
         {
-            T.show(mContext, "데이터 업데이트 진행중입니다");
+            T.show(mContext, getString(R.string.data_updating));
             return;
         }
         else if(data_gap<10)
@@ -3343,7 +3501,8 @@ public class LauncherActivity extends Activity {
         int height = bmp.getHeight();
 
         Matrix matrix = new Matrix();
-        matrix.postRotate(90);
+        matrix.setScale(-1,1);
+        //matrix.postRotate(90);
 
         Bitmap resizedBitmap = Bitmap.createBitmap(bmp, 0, 0, width, height, matrix, true);
         bmp.recycle();
@@ -3354,6 +3513,11 @@ public class LauncherActivity extends Activity {
     public void stopBtnClicked(View v)
     {
         stopCamera();
+    }
+
+    public void rotateBtnClicked(View v)
+    {
+        surfaceView.rotate();
     }
 
     private void stopCamera() {
@@ -3368,6 +3532,7 @@ public class LauncherActivity extends Activity {
             public void run() {
                 surfaceView.setVisibility(View.GONE);
                 stopBtn.setVisibility(View.GONE);
+                rotateBtn.setVisibility(View.GONE);
             }
         });
 
@@ -3386,6 +3551,7 @@ public class LauncherActivity extends Activity {
             public void run() {
                 surfaceView.setVisibility(View.VISIBLE);
                 stopBtn.setVisibility(View.VISIBLE);
+                rotateBtn.setVisibility(View.VISIBLE);
             }
         });
         /*
@@ -3412,6 +3578,7 @@ public class LauncherActivity extends Activity {
         }
 
         doJavascript("javascript:androidBackBtnClicked()");
+
         /*
         if(
                 webView.getUrl().endsWith(getResources().getString(R.string.default_url))
@@ -3438,7 +3605,8 @@ public class LauncherActivity extends Activity {
 
         if (0 <= intervalTime && FINISH_INTERVAL_TIME >= intervalTime)
         {
-            super.onBackPressed();
+            //onBackPressed();
+            finish();
         }
         else
         {
@@ -3588,17 +3756,18 @@ public class LauncherActivity extends Activity {
 
         super.onActivityResult(requestCode, resultCode, data);
 
+        //Log.d("TTT",String.valueOf(requestCode) +String.valueOf(resultCode) +String.valueOf(data) );
+
         //카카오
         if (Session.getCurrentSession().handleActivityResult(requestCode, resultCode, data)) {
             return;
         }
-/*
-        //구글피트
+
+        //구글피트니스
         if (resultCode == Activity.RESULT_OK && requestCode == GOOGLE_FIT_PERMISSIONS_REQUEST_CODE) {
-            getStepsCount();
             return;
         }
-        */
+
 
         //카메라(이미지)업로드
         if (requestCode == FCR)
@@ -3685,6 +3854,7 @@ public class LauncherActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        adlibManager.onDestroy(this);
         super.onDestroy();
         Session.getCurrentSession().removeCallback(callback);
     }
@@ -3755,7 +3925,18 @@ public class LauncherActivity extends Activity {
 
         @Override
         protected void onPostExecute(String s) {
+
             super.onPostExecute(s);
+
+            if(result == null)
+            {
+                return;
+            }
+
+            if(result.isEmpty()) {
+                return;
+            }
+
             try {
                 //넘어온 result 값을 JSONObject 로 변환해주고, 값을 가져오면 되는데요.
                 // result 를 Log에 찍어보면 어떻게 가져와야할 지 감이 오실거에요.
@@ -3830,12 +4011,12 @@ public class LauncherActivity extends Activity {
                 if (status == DownloadManager.STATUS_FAILED) {
                     // do something when failed
                     common.log("failed");
-                    T.show(mContext, "AGPS 다운로드 실패");
+                    T.show(mContext, "AGPS download failed");
                 }
                 else if (status == DownloadManager.STATUS_PENDING || status == DownloadManager.STATUS_PAUSED) {
                     // do something pending or paused
                     common.log("pending");
-                    T.show(mContext, "AGPS 다운로드 실패");
+                    T.show(mContext, "AGPS download failed");
                 }
                 else if (status == DownloadManager.STATUS_SUCCESSFUL) {
                     // do something when successful
@@ -3920,6 +4101,7 @@ public class LauncherActivity extends Activity {
 
     @Override
     public void onResume() {
+        adlibManager.onResume(this);
         super.onResume();
         webView.resumeTimers();
         //webView.reload(); //카메라 이미지 업로드시 리로드되는 상황이 발생하여 리로드처리하지 않음
@@ -3938,7 +4120,7 @@ public class LauncherActivity extends Activity {
         String cur_url = common.getSP("cur_url","EMPTY");
 
         if(cur_url.contains("index.php") || cur_url.contains("device.php")) {
-            T.show(mContext, "기기 연결 확인중");
+            T.show(mContext, getString(R.string.checking_connection));
             //doJavascript("javascript:show_loading(10000)"); //기기연결된 경우 reload
             //splashView();
         }
@@ -3957,9 +4139,610 @@ public class LauncherActivity extends Activity {
 
     @Override
     public void onPause() {
+        adlibManager.onPause(this);
         super.onPause();
         webView.pauseTimers();
     }
 
+    public void insertGooglefitSleep(long startTime, long endTime) {
+
+        if(startTime > endTime) {
+            return;
+        }
+
+        try{
+
+            Calendar cal_gmt = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+            long gmt = cal_gmt.getTimeInMillis();
+
+            int offset = TimeZone.getDefault().getRawOffset() + TimeZone.getDefault().getDSTSavings();
+
+            if(endTime - offset > gmt) {
+                Log.d("TTTE3", String.valueOf(endTime-offset));
+                return;
+            }
+
+            endTime = endTime - offset;
+            startTime = startTime - offset;
+            //startTime = startTime - (1000*60*5);
+
+            if (GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions)) {
+
+                /*
+                //SLEEP
+                DataSource dataSleep = new DataSource.Builder()
+                        .setAppPackageName(this)
+                        .setDataType(DataType.TYPE_ACTIVITY_SEGMENT)
+                        .setType(DataSource.TYPE_RAW)
+                        .build();
+                DataSet sleepDataSet = DataSet.create(dataSleep);
+                DataPoint sleepPoint = sleepDataSet.createDataPoint()
+                        .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
+                sleepPoint.getValue(FIELD_ACTIVITY).setActivity(FitnessActivities.SLEEP);
+                sleepDataSet.add(sleepPoint);
+*/
+                //SESSION
+                com.google.android.gms.fitness.data.Session session = new com.google.android.gms.fitness.data.Session.Builder()
+                        .setName(mSmaManager.getSavedName())
+                        .setActivity(FitnessActivities.SLEEP)
+                        .setIdentifier(UUID.randomUUID().toString())
+                        .setStartTime(startTime, TimeUnit.MILLISECONDS)
+                        .setEndTime(endTime, TimeUnit.MILLISECONDS)
+                        .build();
+
+                SessionInsertRequest insertRequest = new SessionInsertRequest.Builder()
+                        .setSession(session)
+                        //.addDataSet(sleepDataSet)
+                        .build();
+
+                Fitness.getSessionsClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                        .insertSession(insertRequest)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                // At this point, the session has been inserted and can be read.
+                                Log.d("TTT", "onSuccessSleep");
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                Log.d("TTT", "onFailSleep");
+                            }
+                        });
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+            sendException("insertGooglefitSleep : " + e);
+            return;
+        }
+
+    }
+
+    public void insertGooglefitHeart(float heart, long endTime) {
+
+        try{
+
+            Calendar cal_gmt = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+            long gmt = cal_gmt.getTimeInMillis();
+
+            int offset = TimeZone.getDefault().getRawOffset() + TimeZone.getDefault().getDSTSavings();
+
+            if(heart < 30 || heart > 200 || endTime - offset > gmt) {
+                Log.d("TTTE3", String.valueOf(endTime-offset));
+                return;
+            }
+
+            endTime = endTime - offset;
+
+        }catch (Exception e){
+            e.printStackTrace();
+            sendException("insertGooglefitHeart : " + e);
+            return;
+        }
+
+        if (GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions)) {
+
+            long startTime = endTime - (1000*60*1);
+
+            //HEART
+            DataSource dataHeart = new DataSource.Builder()
+                    .setAppPackageName(this)
+                    .setDataType(DataType.TYPE_HEART_RATE_BPM)
+                    .setType(DataSource.TYPE_RAW)
+                    .build();
+            DataSet heartDataSet = DataSet.create(dataHeart);
+            DataPoint heartPoint = heartDataSet.createDataPoint()
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
+            heartPoint.setFloatValues(heart);
+            heartDataSet.add(heartPoint);
+
+            Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                    .insertData(heartDataSet)
+                    //.deleteData(request)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d("TTT", "onSuccessHeart");
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            e.printStackTrace();
+                            Log.d("TTT", "onFailHeart"+e);
+                        }
+                    });
+
+            return;
+
+        }
+    }
+
+    public void insertGooglefitStep(int step, long endTime) {
+
+
+        try{
+
+            Calendar cal_gmt = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+            long gmt = cal_gmt.getTimeInMillis();
+
+            Log.d("TTTE", String.valueOf(gmt));
+
+            int offset = TimeZone.getDefault().getRawOffset() + TimeZone.getDefault().getDSTSavings();
+
+            Log.d("TTTE1", String.valueOf(endTime));
+            Log.d("TTTE2", String.valueOf(offset));
+
+            if(step < 1 || endTime - offset > gmt) {
+                Log.d("TTTE3", String.valueOf(endTime-offset));
+                return;
+            }
+
+            Log.d("TTTE4", String.valueOf(endTime));
+
+            endTime = endTime - offset;
+
+            Log.d("TTTE5", String.valueOf(endTime));
+
+        }catch (Exception e){
+            e.printStackTrace();
+            sendException("insertGooglefitStep : " + e);
+            return;
+        }
+
+        if (GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions)) {
+
+            String s_time = common.getSP("last_google_step_time", "1575306818000");
+            String s_step = common.getSP("last_google_step", "0");
+            int last_step = Integer.parseInt(s_step);
+
+            long startTime = Long.parseLong(s_time);
+
+            common.putSP("last_google_step_time", String.valueOf(endTime));
+            common.putSP("last_google_step", String.valueOf(step));
+
+            if(startTime > endTime) {
+                return;
+            }
+
+            if(step > last_step) {
+                step = step - last_step;
+            }
+
+            if(endTime-startTime > (1000*60*15))
+            {
+                startTime = endTime - (1000*60*15);
+            }
+
+            /*
+            String user_gender = common.getSP("user_gender", "1");
+            String user_weight = common.getSP("user_weight", "60");
+            String user_height = common.getSP("user_height", "170");
+            float weight = Float.parseFloat(user_weight);
+            float height = Float.parseFloat(user_height);
+            float dist = 0;
+
+            if(user_gender.equals("1")) {
+                dist = (float) (floor(height * step * 45 / 100000) / 100);
+            }else{
+                dist = (float) (floor(height * step * 45 / 100000) / 100);
+            }
+
+            Log.d("TTTE5", String.valueOf(user_gender));
+            Log.d("TTTE6", String.valueOf(height));
+            Log.d("TTTE7", String.valueOf(step));
+            Log.d("TTTE8", String.valueOf(dist));
+
+             */
+
+            //STEP
+            DataSource dataStep = new DataSource.Builder()
+                    .setAppPackageName(this)
+                    .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
+                    .setType(DataSource.TYPE_RAW)
+                    .build();
+            DataSet stepDataSet = DataSet.create(dataStep);
+            DataPoint stepPoint = stepDataSet.createDataPoint()
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
+            stepPoint.getValue(FIELD_STEPS).setInt(step);
+            stepDataSet.add(stepPoint);
+
+
+            if(step>200) {
+
+                //ACTIVITY
+                DataSource acSource = new DataSource.Builder()
+                        .setAppPackageName(this)
+                        .setDataType(DataType.TYPE_ACTIVITY_SEGMENT)
+                        .setType(DataSource.TYPE_RAW).build();
+                DataSet acDataSet = DataSet.create(acSource);
+                DataPoint acDataPoint = DataPoint.create(acSource).setTimeInterval(
+                        startTime, endTime, TimeUnit.MILLISECONDS);
+                acDataPoint.getValue(FIELD_ACTIVITY).setActivity("SmartHelper");
+                acDataSet.add(acDataPoint);
+
+                //SESSION
+                com.google.android.gms.fitness.data.Session session = new com.google.android.gms.fitness.data.Session.Builder()
+                        .setName(mSmaManager.getSavedName())
+                        //.setDescription("My Exercise Session")
+                        .setActivity(FitnessActivities.WALKING)
+                        .setIdentifier(UUID.randomUUID().toString())
+                        .setStartTime(startTime, TimeUnit.MILLISECONDS)
+                        .setEndTime(endTime, TimeUnit.MILLISECONDS)
+                        .build();
+
+
+                SessionInsertRequest insertRequest = new SessionInsertRequest.Builder()
+                        .setSession(session)
+                        .addDataSet(stepDataSet)
+                        .addDataSet(acDataSet)
+                        .build();
+
+                Fitness.getSessionsClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                        .insertSession(insertRequest)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                // At this point, the session has been inserted and can be read.
+                                Log.d("TTT", "onSuccessStepSession");
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                            }
+                        });
+            } else {
+                Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                        .insertData(stepDataSet)
+                        //.deleteData(request)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                Log.d("TTT", "onSuccessStep");
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+
+            }
+
+            String user_gender = common.getSP("user_gender", "1");
+            String user_weight = common.getSP("user_weight", "60");
+            String user_height = common.getSP("user_height", "170");
+            float weight = Float.parseFloat(user_weight);
+            float height = Float.parseFloat(user_height);
+            float dist = 0;
+            float cal = 0;
+
+            if (user_gender.equals("1")) {
+                cal = (float) floor(0.55 * weight * step) / 1000;
+            } else {
+                cal = (float) floor(0.46 * weight * step) / 1000;
+            }
+
+            dist = (float) floor(height * step * 45 / 10000);
+
+            if (dist > 0) {
+                //DISTANCE
+                DataSource distance = new DataSource.Builder()
+                        .setAppPackageName(this)
+                        .setDataType(DataType.TYPE_DISTANCE_DELTA)
+                        .setType(DataSource.TYPE_RAW).build();
+                DataSet distanceDataSet = DataSet.create(distance);
+                DataPoint distanceDataPoint = DataPoint.create(distance)
+                        .setTimeInterval(startTime, endTime,
+                                TimeUnit.MILLISECONDS);
+                distanceDataPoint.getValue(FIELD_DISTANCE).setFloat(dist);
+                distanceDataSet.add(distanceDataPoint);
+
+                Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                        .insertData(distanceDataSet)
+                        //.deleteData(request)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                Log.d("TTT", "onSuccessDistance");
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+
+
+            }
+
+
+            /*
+            Log.d("TTTcal", String.valueOf(cal));
+            if (cal > 0) {
+                //CALORIE
+                DataSource dataCalorie = new DataSource.Builder()
+                        .setAppPackageName(this)
+                        .setDataType(DataType.TYPE_CALORIES_EXPENDED)
+                        .setType(DataSource.TYPE_RAW)
+                        .build();
+                DataSet calDataSet = DataSet.create(dataCalorie);
+                DataPoint calPoint = calDataSet.createDataPoint()
+                        .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
+                calPoint.getValue(FIELD_CALORIES).setFloat(cal);
+                calDataSet.add(calPoint);
+
+                Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                        .insertData(calDataSet)
+                        //.deleteData(request)
+                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                            @Override
+                            public void onSuccess(Void aVoid) {
+                                Log.d("TTT", "onSuccessCalorie");
+                            }
+                        })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+            }
+            */
+
+            return;
+
+
+            /*
+            //Calendar cal = Calendar.getInstance();
+            //Date now = new Date();
+            //cal.setTime(now);
+
+            //cal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH), 11, 25, 00);
+            //long endTime = cal.getTimeInMillis();
+
+            //long nowTime = cal.getTimeInMillis();
+
+            //cal.add(Calendar.MINUTE, -10);
+            //cal.add(Calendar.DAY_OF_YEAR, -2);
+            //cal.set(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH), 11, 00, 00);
+            //long startTime = cal.getTimeInMillis();
+
+
+            //return;
+
+
+             */
+
+            /*
+            Fitness.getRecordingClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                    .subscribe(DataType.TYPE_ACTIVITY_SAMPLES)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.i(TAG, "Successfully subscribed!");
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.i(TAG, "There was a problem subscribing.");
+                        }
+                    });
+
+
+
+            if (mGoogleApiClient == null) {
+                mGoogleApiClient = new GoogleApiClient.Builder(this)
+                        .addApi(Fitness.SESSIONS_API)
+                        .addApi(Fitness.HISTORY_API)
+                        .addScope(new Scope(Scopes.FITNESS_LOCATION_READ_WRITE))
+                        .addScope(new Scope(Scopes.FITNESS_ACTIVITY_READ_WRITE))
+                        //.addConnectionCallbacks((GoogleApiClient.ConnectionCallbacks) getApplicationContext())
+                        //.enableAutoManage((FragmentActivity) getApplicationContext(), 0, this)
+                        .build();
+            }
+
+
+             */
+
+
+
+
+
+            /*
+            //ACTIVITY
+            DataSource acSource = new DataSource.Builder()
+                    .setAppPackageName(this)
+                    .setDataType(DataType.TYPE_ACTIVITY_SEGMENT)
+                    .setType(DataSource.TYPE_RAW).build();
+            DataSet acDataSet = DataSet.create(acSource);
+            DataPoint acDataPoint = DataPoint.create(acSource).setTimeInterval(
+                    startTime, endTime, TimeUnit.MILLISECONDS);
+            acDataPoint.getValue(FIELD_ACTIVITY).setActivity("SmartHelper");
+            acDataSet.add(acDataPoint);
+
+            Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                    .insertData(acDataSet)
+                    //.deleteData(request)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d("TTT", "onSuccessActivity");
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+
+
+            //DISTANCE
+            DataSource distance = new DataSource.Builder()
+                    .setAppPackageName(this)
+                    .setDataType(DataType.TYPE_DISTANCE_DELTA)
+                    .setType(DataSource.TYPE_RAW).build();
+            DataSet distanceDataSet = DataSet.create(distance);
+            DataPoint distanceDataPoint = DataPoint.create(distance)
+                    .setTimeInterval(startTime, endTime,
+                            TimeUnit.MILLISECONDS);
+            float distanceDelta = (float)0.5;
+            distanceDataPoint.getValue(FIELD_DISTANCE).setFloat(distanceDelta);
+            distanceDataSet.add(distanceDataPoint);
+
+            Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                    .insertData(distanceDataSet)
+                    //.deleteData(request)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d("TTT", "onSuccessDistance");
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+
+            //STEP
+            DataSource dataStep = new DataSource.Builder()
+                    .setAppPackageName(this)
+                    .setDataType(DataType.TYPE_STEP_COUNT_DELTA)
+                    .setType(DataSource.TYPE_RAW)
+                    .build();
+
+            int stepCountDelta = 500;  //we will add 10,000 steps for yesterday.
+            DataSet stepDataSet = DataSet.create(dataStep);
+
+            DataPoint stepPoint = stepDataSet.createDataPoint()
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
+            stepPoint.getValue(FIELD_STEPS).setInt(stepCountDelta);
+            stepDataSet.add(stepPoint);
+
+            //Fitness.HistoryApi.insertData(mGoogleApiClient, dataSet);
+
+            DataDeleteRequest request = new DataDeleteRequest.Builder()
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                    .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
+                    .build();
+
+            Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                    .insertData(stepDataSet)
+                    //.deleteData(request)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d("TTT", "onSuccessStep");
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+
+            //CALORIE
+            DataSource dataCalorie = new DataSource.Builder()
+                    .setAppPackageName(this)
+                    .setDataType(DataType.TYPE_CALORIES_EXPENDED)
+                    .setType(DataSource.TYPE_RAW)
+                    .build();
+
+            float calDelta = (float) 100.00;
+            DataSet calDataSet = DataSet.create(dataCalorie);
+
+            DataPoint calPoint = calDataSet.createDataPoint()
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS);
+            calPoint.getValue(FIELD_CALORIES).setFloat(calDelta);
+            calDataSet.add(calPoint);
+
+            Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                    .insertData(calDataSet)
+                    //.deleteData(request)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d("TTT", "onSuccessCalorie");
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+
+
+
+             */
+
+/*
+            cal.setTime(now);
+            endTime = cal.getTimeInMillis();
+            cal.add(Calendar.DAY_OF_YEAR, -1);
+            startTime = cal.getTimeInMillis();
+
+            DataDeleteRequest request = new DataDeleteRequest.Builder()
+                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                    .addDataType(DataType.TYPE_STEP_COUNT_DELTA)
+                    .build();
+
+            Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this)).deleteData(mGoogleApiClient, request).await(1, TimeUnit.MINUTES);
+        */
+        }
+
+
+    }
+
+    public void unlinkGooglefit() {
+
+        Fitness.getConfigClient(this, GoogleSignIn.getLastSignedInAccount(this)).disableFit();
+        GoogleSignIn.getClient(this, new GoogleSignInOptions.Builder().addExtension(fitnessOptions).build()).revokeAccess();
+    }
+
+    public void linkGooglefit() {
+
+        if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this), fitnessOptions)) {
+            GoogleSignIn.requestPermissions(
+                    this,
+                    GOOGLE_FIT_PERMISSIONS_REQUEST_CODE,
+                    GoogleSignIn.getLastSignedInAccount(this),
+                    fitnessOptions);
+        }
+        else
+        {
+            doJavascript("javascript:googlefitLinked()");
+        }
+    }
 
 }

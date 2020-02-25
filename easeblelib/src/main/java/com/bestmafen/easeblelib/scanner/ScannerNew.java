@@ -24,101 +24,101 @@ class ScannerNew extends EaseScanner {
 
     @Override
     public void startScan(boolean scan) {
-//        try {
-        if (mEaseScanCallback == null) return;
+        try {
+            if (mEaseScanCallback == null) return;
 
-        if (isScanning == scan) return;
+            if (isScanning == scan) return;
 
-        if (scan) {
-            if (!sBluetoothAdapter.isEnabled()) {
-                mEaseScanCallback.onBluetoothDisabled();
-                return;
-            }
+            if (scan) {
+                if (!sBluetoothAdapter.isEnabled()) {
+                    mEaseScanCallback.onBluetoothDisabled();
+                    return;
+                }
 
-            if (mScanCallback == null) {
-                mScanCallback = new ScanCallback() {
+                if (mScanCallback == null) {
+                    mScanCallback = new ScanCallback() {
 
-                    @Override
-                    public void onScanResult(int callbackType, ScanResult result) {
-                        super.onScanResult(callbackType, result);
-                        if (result == null) return;
+                        @Override
+                        public void onScanResult(int callbackType, ScanResult result) {
+                            super.onScanResult(callbackType, result);
+                            if (result == null) return;
 
-                        final BluetoothDevice device = result.getDevice();
-                        if (device == null) return;
+                            final BluetoothDevice device = result.getDevice();
+                            if (device == null) return;
 
-                        String name = device.getName();
-                        String address = device.getAddress();
-                        if (TextUtils.isEmpty(name) || TextUtils.isEmpty(address)) return;
+                            String name = device.getName();
+                            String address = device.getAddress();
+                            if (TextUtils.isEmpty(name) || TextUtils.isEmpty(address)) return;
 
-//                        L.v("ScannerNew -> onScanResult " + name + " " + address);
-                        final int rssi = result.getRssi();
-                        final byte[] scanRecord = result.getScanRecord() == null ? new byte[0] : result.getScanRecord()
-                                .getBytes();
+    //                        L.v("ScannerNew -> onScanResult " + name + " " + address);
+                            final int rssi = result.getRssi();
+                            final byte[] scanRecord = result.getScanRecord() == null ? new byte[0] : result.getScanRecord()
+                                    .getBytes();
 
-                        if (mScanOption != null) {
-                            if (mScanOption.mFilterNames.contains(name)) return;
+                            if (mScanOption != null) {
+                                if (mScanOption.mFilterNames.contains(name)) return;
 
-                            if (mScanOption.mFilterAddresses.contains(address)) return;
+                                if (mScanOption.mFilterAddresses.contains(address)) return;
 
-                            if (mScanOption.mSpecifiedNames.size() > 0 && !mScanOption.mSpecifiedNames.contains(name)) return;
+                                if (mScanOption.mSpecifiedNames.size() > 0 && !mScanOption.mSpecifiedNames.contains(name)) return;
 
-                            if (mScanOption.mSpecifiedAddresses.size() > 0 && !mScanOption.mSpecifiedAddresses.contains
-                                    (address)) return;
+                                if (mScanOption.mSpecifiedAddresses.size() > 0 && !mScanOption.mSpecifiedAddresses.contains
+                                        (address)) return;
 
-                            if (mScanOption.mMinRssi > rssi) return;
+                                if (mScanOption.mMinRssi > rssi) return;
+                            }
+
+                            mHandler.post(new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    if (mEaseScanCallback == null) return;
+
+                                    if (!isScanning) return;
+
+                                    mEaseScanCallback.onDeviceFound(new EaseDevice(device, rssi, scanRecord));
+                                }
+                            });
                         }
 
-                        mHandler.post(new Runnable() {
+                        @Override
+                        public void onBatchScanResults(List<ScanResult> results) {
+                            super.onBatchScanResults(results);
+                        }
 
-                            @Override
-                            public void run() {
-                                if (mEaseScanCallback == null) return;
+                        @Override
+                        public void onScanFailed(int errorCode) {
+                            super.onScanFailed(errorCode);
+                        }
+                    };
+                }
 
-                                if (!isScanning) return;
+                if (mScanOption != null) {
+                    mPeriod = mScanOption.mPeriod;
+                }
+                stopScanDelay();
 
-                                mEaseScanCallback.onDeviceFound(new EaseDevice(device, rssi, scanRecord));
-                            }
-                        });
-                    }
+                BluetoothLeScanner scanner = sBluetoothAdapter.getBluetoothLeScanner();
+                if (scanner != null) {
+                    scanner.startScan(null, mScanSettings, mScanCallback);
+                }
+            } else {
+                removeStop();
 
-                    @Override
-                    public void onBatchScanResults(List<ScanResult> results) {
-                        super.onBatchScanResults(results);
-                    }
-
-                    @Override
-                    public void onScanFailed(int errorCode) {
-                        super.onScanFailed(errorCode);
-                    }
-                };
+                BluetoothLeScanner scanner = sBluetoothAdapter.getBluetoothLeScanner();
+                if (scanner != null) {
+                    scanner.stopScan(mScanCallback);
+                }
             }
 
-            if (mScanOption != null) {
-                mPeriod = mScanOption.mPeriod;
-            }
-            stopScanDelay();
-
-            BluetoothLeScanner scanner = sBluetoothAdapter.getBluetoothLeScanner();
-            if (scanner != null) {
-                scanner.startScan(null, mScanSettings, mScanCallback);
-            }
-        } else {
-            removeStop();
-
-            BluetoothLeScanner scanner = sBluetoothAdapter.getBluetoothLeScanner();
-            if (scanner != null) {
-                scanner.stopScan(mScanCallback);
-            }
+            isScanning = scan;
+            L.d("ScannerNew -> startScan " + scan);
+            mEaseScanCallback.onScanStart(scan);
+        } catch (Exception e) {
+            e.printStackTrace();
+            isScanning = scan;
+            L.d("ScannerNew -> startScan " + scan);
+            mEaseScanCallback.onScanStart(scan);
         }
-
-        isScanning = scan;
-        L.d("ScannerNew -> startScan " + scan);
-        mEaseScanCallback.onScanStart(scan);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            isScanning = scan;
-//            L.d("ScannerNew -> startScan " + scan);
-//            mEaseScanCallback.onScanStart(scan);
-//        }
     }
 }

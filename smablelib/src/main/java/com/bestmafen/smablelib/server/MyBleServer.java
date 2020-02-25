@@ -581,6 +581,9 @@ public class MyBleServer {
                     mGattCharacteristic.setValue(mValue);
                     mSemaphore.acquire();
                     BluetoothDevice device = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address);
+
+                    if (device == null) return;
+
                     if (!mBluetoothGattServer.notifyCharacteristicChanged(device, mGattCharacteristic, false)) {
 //                        L.w(TAG, "handleTask TASK_NOTIFY_CHANGE " + getUuidText(mGattCharacteristic.getUuid()) + ", "
 //                                + EaseUtils.byteArray2HexString(mValue) + " -> false");
@@ -602,6 +605,8 @@ public class MyBleServer {
                     }
                 }
             } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (NullPointerException e){
                 e.printStackTrace();
             }
         }

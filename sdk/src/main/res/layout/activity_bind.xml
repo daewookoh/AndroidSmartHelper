@@ -14,6 +14,27 @@
     </ListView>
 
     <TextView
+        android:id="@+id/app_finish"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@color/mainBlue"
+        android:gravity="center"
+        android:text="앱 강제종료"
+        android:visibility="invisible"
+        android:textColor="@color/white"/>
+
+    <TextView
+        android:id="@+id/app_finish2"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:background="@color/white"
+        android:gravity="center"
+        android:textSize="10dp"
+        android:text="* 연결이 잘 안될경우 강제종료후 재시도"
+        android:visibility="invisible"
+        android:textColor="@color/mainBlue"/>
+
+    <TextView
         android:id="@+id/tv_scan"
         android:layout_width="match_parent"
         android:layout_height="40dp"
@@ -21,4 +42,5 @@
         android:gravity="center"
         android:text="@string/scan"
         android:textColor="@color/white"/>
+
 </LinearLayout>

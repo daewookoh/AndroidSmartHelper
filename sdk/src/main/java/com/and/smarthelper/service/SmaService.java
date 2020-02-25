@@ -2,6 +2,9 @@ package com.and.smarthelper.service;
 
 import android.Manifest;
 import android.app.DownloadManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.app.Service;
 import android.content.ContentValues;
@@ -10,17 +13,21 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.Looper;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.and.smarthelper.activity.LauncherActivity;
@@ -61,6 +68,7 @@ import java.util.TimerTask;
 public class SmaService extends Service {
 
     MyApplication common = new MyApplication(this);
+    NotificationCompat.Builder builder;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -68,7 +76,57 @@ public class SmaService extends Service {
     }
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+
+        Log.d("TTTS", String.valueOf(Build.VERSION.SDK_INT) + String.valueOf(Build.VERSION_CODES.O));
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            String CHANNEL_ID = "SmartHelper";
+            String CHANNEL_NAME = "SmartHelper";
+
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
+                    CHANNEL_NAME,
+                    NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setSound(null,null);
+            channel.setShowBadge(false);
+
+            ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE))
+                    .createNotificationChannel(channel);
+
+            builder = new NotificationCompat.Builder(this, CHANNEL_ID);
+
+            startForeground(1, builder.build());
+            stopForeground(true);
+
+        }
+
+    }
+
+
+    @Override
+    public void onDestroy() {
+        // 서비스가 종료될 때 실행
+        super.onDestroy();
+        if(mReceiver!=null)
+        {
+            try {
+                unregisterReceiver(mReceiver);
+            } catch (IllegalArgumentException e){
+                sendException("SmaSevice : " + e);
+            } catch (Exception e) {
+                sendException("SmaSevice : " + e);
+            }finally {
+
+            }
+
+        }
+    }
+
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
         SmaManager.getInstance().connect(true);
         registerReceiver(mReceiver, new IntentFilter(Intent.ACTION_TIME_TICK));
         return super.onStartCommand(intent, flags, startId);
@@ -88,7 +146,7 @@ public class SmaService extends Service {
                 if(SmaManager.getInstance().isLoggedIn()) {
                     Log.d("TTTS", "isLoggedIn");
                     setWeather(); // 1시간마다 갱신
-                    setAgps(); // 3시간마다 갱신
+                    setAgps(); // 6시간마다 갱신
                 }
                 else
                 {
@@ -125,6 +183,7 @@ public class SmaService extends Service {
 
         } catch (ParseException e) {
             e.printStackTrace();
+            sendException("SmaSevice : " + e);
         }
 
 
@@ -157,6 +216,7 @@ public class SmaService extends Service {
 
         } catch (ParseException e) {
             e.printStackTrace();
+            sendException("SmaSevice : " + e);
         }
 
         return 0;
@@ -229,23 +289,64 @@ public class SmaService extends Service {
                         String longitude = common.getSP("longitude", "0");
                         String latitude = common.getSP("latitude", "0");
 
-                        if(last_longitude=="0" && last_latitude=="0")
+                        if(last_longitude.equals("0") && last_latitude.equals("0"))
                         {
                             flag = true;
                         }
-                        else if(last_longitude!="0" && last_latitude!="0") {
-                            double lat_gap = Math.abs(Double.valueOf(last_latitude)-Double.valueOf(latitude));
-                            double lon_gap = Math.abs(Double.valueOf(last_longitude)-Double.valueOf(longitude));
-                            double gps_gap = lat_gap+lon_gap;
+                        else if (last_longitude.isEmpty() || last_latitude.isEmpty() )
+                        {
+                            Log.d("TTT", "A");
+                            last_longitude = "0";
+                            last_latitude = "0";
 
-                            Log.d("TTTSlat_gap", String.valueOf(lat_gap));
-                            Log.d("TTTSlon_gap", String.valueOf(lon_gap));
-                            Log.d("TTTSgps_gap", String.valueOf(gps_gap));
+                            flag = true;
+                        }
+                        else if(!last_longitude.equals("0") && !last_latitude.equals("0")) {
 
-                            if(gps_gap>0.1)
-                            {
-                                flag = true;
+                            try{
+
+                                double last_lat = Double.parseDouble(last_latitude);
+                                double last_lon = Double.parseDouble(last_longitude);
+
+                                double lat = Double.parseDouble(latitude);
+                                double lon = Double.parseDouble(longitude);
+
+                                double lat_gap = last_lat - lat;
+                                double lon_gap = last_lon - lon;
+
+                                double lat_gap_abs = Math.abs(lat_gap);
+                                double lon_gap_abs = Math.abs(lon_gap);
+
+                                double gps_gap = lat_gap_abs + lon_gap_abs;
+
+                                Log.d("TTTSlat_gap", String.valueOf(lat_gap));
+                                Log.d("TTTSlon_gap", String.valueOf(lon_gap));
+                                Log.d("TTTSlat_gap", String.valueOf(lat_gap_abs));
+                                Log.d("TTTSlon_gap", String.valueOf(lon_gap_abs));
+                                Log.d("TTTSgps_gap", String.valueOf(gps_gap));
+
+                                if(gps_gap>0.1)
+                                {
+                                    flag = true;
+                                }
+
+                            }catch (NumberFormatException e){
+
+                                String url = getResources().getString(R.string.api_url);
+                                ContentValues values = new ContentValues();
+                                values.put("action", "getGpsFromApp");
+                                values.put("lon", "0");
+                                values.put("lat", "0");
+                                values.put("mem_no", mem_no);
+
+                                HttpAsyncRequest httpAssyncRequest = new HttpAsyncRequest(url, values);
+                                httpAssyncRequest.execute();
+
+                                sendException("SmaSevice : " + e);
+
+                                return;
                             }
+
                         }
 
                         if(Integer.valueOf(mem_no) > 0 && flag==true) {
@@ -275,6 +376,7 @@ public class SmaService extends Service {
 
         //1시간마다 업데이트
         if(gap>60*1){
+        //if(true){
 
             getGPS();
             String mem_no=common.getSP("mem_no","0");
@@ -327,6 +429,18 @@ public class SmaService extends Service {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+
+            //Log.d("TTTSresult", result);
+            if(result == null)
+            {
+                return;
+            }
+
+            if(result.isEmpty())
+            {
+                return;
+            }
+
             try {
                 //넘어온 result 값을 JSONObject 로 변환해주고, 값을 가져오면 되는데요.
                 // result 를 Log에 찍어보면 어떻게 가져와야할 지 감이 오실거에요.
@@ -403,6 +517,7 @@ public class SmaService extends Service {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                sendException("SmaSevice : " + e);
             }
             }
 
@@ -491,8 +606,10 @@ public class SmaService extends Service {
 
         } catch (MalformedURLException e) { // for URL.
             e.printStackTrace();
+            sendException("SmaSevice : " + e);
         } catch (IOException e) { // for openConnection().
             e.printStackTrace();
+            sendException("SmaSevice : " + e);
         } finally {
             if (urlConn != null)
                 urlConn.disconnect();
@@ -503,6 +620,20 @@ public class SmaService extends Service {
     }
 
     private void setAgps(){
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+        {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            Log.d("TTT", "저장공간 권한필요");
+
+            return;
+        }
 
         int gap = getAgpsTimeGap();
         Log.d("TTTS agps gap", String.valueOf(gap));
@@ -517,7 +648,9 @@ public class SmaService extends Service {
 
 
             DownloadManager.Request request = new DownloadManager.Request(uri);
-            request.setDestinationInExternalPublicDir(getApplicationContext().getCacheDir().getAbsolutePath(), file_name);
+            //request.setDestinationInExternalPublicDir(getApplicationContext().getCacheDir().getAbsolutePath(), file_name);
+            request.setDestinationInExternalPublicDir("/AUTOAGPS", file_name);
+
             long id = downloadmanager.enqueue(request);
 
             final Timer timer = new Timer();
@@ -539,7 +672,6 @@ public class SmaService extends Service {
 
         public void run() {
             //Do stuff
-
             DownloadManager downloadmanager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
             Cursor cursor = downloadmanager.query(new DownloadManager.Query().setFilterById(id));
 
@@ -559,12 +691,15 @@ public class SmaService extends Service {
                     // do something when successful
                     common.log("success");
 
-                    File initialFile = new File(Environment.getExternalStorageDirectory() + getApplicationContext().getCacheDir().getAbsolutePath() + "/" + file_name);
+                    //File initialFile = new File(Environment.getExternalStorageDirectory() + getApplicationContext().getCacheDir().getAbsolutePath() + "/" + file_name);
+                    File initialFile = new File(Environment.getExternalStorageDirectory() + "/AUTOAGPS/" + file_name);
+
                     InputStream targetStream = null;
                     try {
                         targetStream = new FileInputStream(initialFile);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
+                        sendException("SmaSevice : " + e);
                     }
 
                     SmaStream stream = new SmaStream();
@@ -572,7 +707,13 @@ public class SmaService extends Service {
                     //stream.inputStream = getResources().openRawResource(R.raw.epo_gr_3_1);
                     stream.flag = SmaStream.FLAG_LOCATION_ASSISTED;
 
-                    SmaManager.getInstance().writeStream(stream);
+                    try{
+                        SmaManager.getInstance().writeStream(stream);
+                    } catch(Exception e){
+                        e.printStackTrace();
+                        sendException("SmaSevice : " + e);
+                    }
+
 
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     String cur_time = sdf.format(new Date());
@@ -587,6 +728,20 @@ public class SmaService extends Service {
                 }
             }
         }
+    }
+
+    public void sendException(String data){
+
+        String mem_no = common.getSP("mem_no", "0");
+        String url = getResources().getString(R.string.api_url);
+        ContentValues values = new ContentValues();
+        values.put("action", "sendException");
+        values.put("data", data);
+        values.put("mem_no", mem_no);
+
+        SmaService.HttpAsyncRequest httpAssyncRequest = new SmaService.HttpAsyncRequest(url, values);
+        httpAssyncRequest.execute();
+
     }
 
 

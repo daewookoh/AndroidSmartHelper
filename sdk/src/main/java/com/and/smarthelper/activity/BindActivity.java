@@ -1,6 +1,7 @@
 package com.and.smarthelper.activity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
@@ -47,6 +48,8 @@ public class BindActivity extends BaseActivity implements View.OnClickListener {
     private ListView      lv;
     private DeviceAdapter mDeviceAdapter = new DeviceAdapter();
     private TextView      tv_scan;
+    private TextView      app_finish;
+    private TextView      app_finish2;
     private AlertDialog   mAlertDialog;
     private AlertDialog   mUnpairDialog;
 
@@ -88,6 +91,16 @@ public class BindActivity extends BaseActivity implements View.OnClickListener {
 
     @Override
     protected void init(Bundle savedInstanceState) {
+
+        new android.os.Handler().postDelayed(
+                new Runnable() {
+                    public void run() {
+                        app_finish.setVisibility(View.VISIBLE);
+                        app_finish2.setVisibility(View.VISIBLE);
+                    }
+                },
+                10000);
+
         mSmaManager = SmaManager.getInstance().addSmaCallback(mSmaCallback = new SimpleSmaCallback() {
 
             @Override
@@ -189,7 +202,7 @@ public class BindActivity extends BaseActivity implements View.OnClickListener {
                 if (state == BluetoothDevice.BOND_BONDED) {
                     if (mUnpairDialog == null) {
                         mUnpairDialog = new AlertDialog.Builder(mContext)
-                                .setMessage(R.string.unpair_tip)
+                                .setMessage(getString(R.string.unpair_tip, device.device.getName()))
                                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
 
                                     @Override
@@ -213,6 +226,11 @@ public class BindActivity extends BaseActivity implements View.OnClickListener {
 
         tv_scan = (TextView) findViewById(R.id.tv_scan);
         tv_scan.setOnClickListener(this);
+
+        app_finish = (TextView) findViewById(R.id.app_finish);
+        app_finish.setOnClickListener(this);
+
+        app_finish2 = (TextView) findViewById(R.id.app_finish2);
     }
 
     @Override
@@ -264,6 +282,12 @@ public class BindActivity extends BaseActivity implements View.OnClickListener {
         switch (v.getId()) {
             case R.id.tv_scan:
                 mScanner.startScan(!mScanner.isScanning);
+                break;
+
+            case R.id.app_finish:
+                finishAffinity();
+                System.runFinalization();
+                System.exit(0);
                 break;
         }
     }

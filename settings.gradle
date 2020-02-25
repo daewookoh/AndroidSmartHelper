@@ -1,1 +1,1 @@
-include ':easeblelib', ':smablelib', ':sdk', ':adlibr.5.0.0.2'
+include ':easeblelib', ':smablelib', ':sdk', ':adlibr.5.0.0.2', ':adlib_v5.1.1'
